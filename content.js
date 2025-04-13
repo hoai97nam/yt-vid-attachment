@@ -4,6 +4,73 @@ let isForKids = false;
 let isPaused = false;
 let isStopped = false;
 
+// Valid license keys
+const validKeys = [
+  'KEY-12345-ABCDE',
+  'KEY-67890-FGHIJ',
+  'KEY-54321-KLMNO',
+  'KEY-09876-PQRST',
+  'KEY-13579-UVWXY'
+];
+
+// Check if license key is valid
+function isValidKey(key) {
+  return validKeys.includes(key);
+}
+
+// Get saved license key from storage
+function getSavedLicenseKey() {
+  return new Promise((resolve) => {
+    chrome.storage.sync.get(['licenseKey'], (result) => {
+      resolve(result.licenseKey || null);
+    });
+  });
+}
+
+// Check if user has a valid license
+async function hasValidLicense() {
+  const key = await getSavedLicenseKey();
+  return key && isValidKey(key);
+}
+
+// Get usage count from storage
+function getUsageCount() {
+  return new Promise((resolve) => {
+    chrome.storage.sync.get(['usageCount'], (result) => {
+      resolve(result.usageCount || 0);
+    });
+  });
+}
+
+// Increment usage count in storage
+function incrementUsageCount() {
+  return new Promise((resolve) => {
+    getUsageCount().then(count => {
+      const newCount = count + 1;
+      chrome.storage.sync.set({ usageCount: newCount }, () => {
+        resolve(newCount);
+      });
+    });
+  });
+}
+
+// Check if user can use the feature (has valid license or trial uses remaining)
+async function canUseFeature() {
+  // Check for valid license first
+  if (await hasValidLicense()) {
+    return { canUse: true, licensed: true };
+  }
+  
+  // Check trial usage
+  const count = await getUsageCount();
+  return {
+    canUse: count < 10,
+    licensed: false,
+    usageCount: count,
+    remainingUses: Math.max(0, 10 - count)
+  };
+}
+
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   if (request.action === 'start') {
@@ -15,8 +82,8 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     console.log('Starting process with video title:', videoTitle);
     console.log('Is for kids:', isForKids);
     
-    // Start the process
-    startProcess();
+    // Check license before starting
+    checkLicenseAndStart();
   } else if (request.action === 'pause') {
     isPaused = true;
     console.log('Process paused');
@@ -26,8 +93,115 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   } else if (request.action === 'stop') {
     isStopped = true;
     console.log('Process stopped');
+  } else if (request.action === 'validateKey') {
+    const isValid = isValidKey(request.key);
+    if (isValid) {
+      chrome.storage.sync.set({ licenseKey: request.key }, () => {
+        sendResponse({ success: true, message: 'License key hợp lệ!' });
+      });
+    } else {
+      sendResponse({ success: false, message: 'License key không hợp lệ.' });
+    }
+    return true; // Keep the message channel open for async response
   }
 });
+
+// Check license and start process if allowed
+async function checkLicenseAndStart() {
+  const licenseStatus = await canUseFeature();
+  
+  if (licenseStatus.canUse) {
+    // If not licensed but can use (trial), increment usage count
+    if (!licenseStatus.licensed) {
+      await incrementUsageCount();
+    }
+    
+    // Start the process
+    startProcess();
+  } else {
+    // Cannot use feature - show license prompt
+    showLicensePrompt();
+  }
+}
+
+// Show license prompt when trial is expired
+function showLicensePrompt() {
+  // Create modal overlay
+  const overlay = document.createElement('div');
+  overlay.style.position = 'fixed';
+  overlay.style.top = '0';
+  overlay.style.left = '0';
+  overlay.style.width = '100%';
+  overlay.style.height = '100%';
+  overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+  overlay.style.zIndex = '10000';
+  overlay.style.display = 'flex';
+  overlay.style.justifyContent = 'center';
+  overlay.style.alignItems = 'center';
+  
+  // Create modal content
+  const modal = document.createElement('div');
+  modal.style.backgroundColor = 'white';
+  modal.style.padding = '20px';
+  modal.style.borderRadius = '5px';
+  modal.style.width = '400px';
+  modal.style.maxWidth = '90%';
+  modal.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+  
+  // Create modal content
+  modal.innerHTML = `
+    <h2 style="color: #c62828; margin-top: 0;">Hết lượt dùng thử</h2>
+    <p>Bạn đã sử dụng hết 10 lượt dùng thử của tiện ích này.</p>
+    <p>Vui lòng nhập license key để tiếp tục sử dụng không giới hạn.</p>
+    <div style="margin: 15px 0;">
+      <input type="text" id="license-key-input" placeholder="Nhập license key của bạn" 
+        style="width: 100%; padding: 8px; box-sizing: border-box; margin-bottom: 10px;">
+      <div id="key-message" style="margin-bottom: 10px; color: #c62828;"></div>
+      <button id="activate-key-btn" style="background-color: #1565c0; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
+        Kích hoạt
+      </button>
+      <button id="cancel-key-btn" style="background-color: #f5f5f5; color: #333; border: none; padding: 8px 15px; border-radius: 4px; margin-left: 10px; cursor: pointer;">
+        Hủy
+      </button>
+    </div>
+  `;
+  
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  
+  // Add event listeners
+  document.getElementById('activate-key-btn').addEventListener('click', () => {
+    const keyInput = document.getElementById('license-key-input');
+    const key = keyInput.value.trim();
+    const messageEl = document.getElementById('key-message');
+    
+    if (!key) {
+      messageEl.textContent = 'Vui lòng nhập license key';
+      return;
+    }
+    
+    if (isValidKey(key)) {
+      // Save valid key to storage
+      chrome.storage.sync.set({ licenseKey: key }, () => {
+        messageEl.textContent = 'License key hợp lệ! Bạn đã kích hoạt phiên bản đầy đủ.';
+        messageEl.style.color = '#2e7d32';
+        
+        // Remove overlay after successful activation
+        setTimeout(() => {
+          document.body.removeChild(overlay);
+          // Start the process now that we have a valid key
+          startProcess();
+        }, 1500);
+      });
+    } else {
+      messageEl.textContent = 'License key không hợp lệ. Vui lòng thử lại.';
+    }
+  });
+  
+  document.getElementById('cancel-key-btn').addEventListener('click', () => {
+    document.body.removeChild(overlay);
+  });
+}
 
 // Thêm hàm để kiểm tra trạng thái tạm dừng
 async function checkPaused() {
@@ -39,6 +213,46 @@ async function checkPaused() {
   // Nếu đã dừng hẳn, ném lỗi để dừng quy trình
   if (isStopped) {
     throw new Error('Process was stopped by user');
+  }
+}
+async function checkRowHasCheckmark(index) {
+  // Find the row container element
+  const rowContainerXPath = `(//a[@id='video-title'])[${index}]`;
+  const rowElement = getElementByXPath(rowContainerXPath);
+  
+  if (!rowElement) {
+    console.log(`Không tìm thấy row-container thứ ${index}`);
+    return null; // Row doesn't exist
+  }
+  
+  // Find the parent element of the row container
+  const parentElement = rowElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement;
+  
+  if (!parentElement) {
+    console.log(`Không tìm thấy phần tử cha của row-container thứ ${index}`);
+    return false;
+  }
+  
+  console.log(`Đã tìm thấy phần tử cha của row-container thứ ${index}`);
+    
+  // Method 2: Using XPath relative to the parent element
+  try {
+    // Create an XPath to find checkmark within the parent element's subtree
+    const checkmarkXPath = `.//div[@id="checkmark"]`;
+    const result = document.evaluate(
+      checkmarkXPath,
+      parentElement,
+      null,
+      XPathResult.FIRST_ORDERED_NODE_TYPE,
+      null
+    );
+    
+    if (result.singleNodeValue) {
+      console.log(`Tìm thấy checkmark bằng XPath tương đối cho video thứ ${index}`);
+      return true;
+    }
+  } catch (e) {
+    console.log(`Lỗi khi tìm checkmark bằng XPath tương đối: ${e.message}`);
   }
 }
 
@@ -60,8 +274,11 @@ async function startProcess() {
       
       console.log(`Bắt đầu xử lý video thứ ${videoIndex}`);
       
-      try {
-        // Wait for the video index to be available and click it
+      try {      
+        
+        console.log(`Video thứ ${videoIndex} có checkmark, bắt đầu xử lý.`);
+        
+        // Now proceed with the original video processing logic
         const videoXPath = `(//a[@id='video-title'])[${videoIndex}]`;
         const videoExists = await elementExists(videoXPath);
         
@@ -69,6 +286,14 @@ async function startProcess() {
           console.log(`Không tìm thấy video thứ ${videoIndex}. Kết thúc quy trình.`);
           continueProcessing = false;
           break;
+        }
+
+        const hasCheckmark = await checkRowHasCheckmark(videoIndex);
+        
+        if (!hasCheckmark) {
+          console.log(`Video thứ ${videoIndex} không có checkmark, bỏ qua.`);
+          videoIndex++;
+          continue; // Skip to the next video
         }
         
         await waitAndClick(videoXPath, `Video thứ ${videoIndex} không tìm thấy`);
