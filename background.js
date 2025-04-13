@@ -1,6 +1,4 @@
-// background.js
-chrome.runtime.onInstalled.addListener(() => {
-    console.log('Chrome extension installed.');
+// Background script to handle extension events
+chrome.runtime.onInstalled.addListener(function() {
+  console.log('YouTube Shorts Related Video Linker extension installed');
 });
-
-// Add any additional background event listeners or functions here

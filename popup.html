@@ -1,114 +1,97 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>YouTube Automation Tool</title>
-    <style>
-        body {
-            width: 350px;
-            padding: 10px;
-            font-family: Arial, sans-serif;
-        }
-        .input-group {
-            margin-bottom: 10px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        input[type="text"] {
-            width: 100%;
-            padding: 5px;
-            box-sizing: border-box;
-        }
-        button {
-            background-color: #4285f4;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        button:hover {
-            background-color: #3367d6;
-        }
-        /* Toggle switch styles */
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 24px;
-        }
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 24px;
-        }
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-        input:checked + .slider {
-            background-color: #4285f4;
-        }
-        input:checked + .slider:before {
-            transform: translateX(26px);
-        }
-        .toggle-label {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .toggle-text {
-            margin-right: 10px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>YouTube Shorts Related Video Linker</title>
+  <style>
+    body {
+      width: 300px;
+      padding: 10px;
+      font-family: Arial, sans-serif;
+    }
+    h1 {
+      font-size: 18px;
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 15px;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #ff0000;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    button:hover {
+      background-color: #cc0000;
+    }
+    .control-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+    .control-buttons button {
+      width: 32%;
+      font-size: 12px;
+    }
+    #pauseButton {
+      background-color: #ffa500;
+    }
+    #pauseButton:hover {
+      background-color: #cc8400;
+    }
+    #resumeButton {
+      background-color: #008000;
+    }
+    #resumeButton:hover {
+      background-color: #006600;
+    }
+    #stopButton {
+      background-color: #808080;
+    }
+    #stopButton:hover {
+      background-color: #666666;
+    }
+    .status-message {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-height: 16px;
+      display: none;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
-    <h2>YouTube Automation Tool</h2>
-    
-    <div class="input-group">
-        <label for="targetXPath">Target Related XPath:</label>
-        <input type="text" id="targetXPath" value="//div[@class='thumbnail style-scope ytcp-entity-card'][1]">
-    </div>
-    
-    <div class="input-group">
-        <label for="delayTime">Delay Between Clicks (ms):</label>
-        <input type="text" id="delayTime" value="2000">
-    </div>
-    
-    <div class="input-group">
-        <div class="toggle-label">
-            <span class="toggle-text">Content for children:</span>
-            <label class="switch">
-                <input type="checkbox" id="forChildrenToggle">
-                <span class="slider"></span>
-            </label>
-        </div>
-    </div>
-    
-    <button id="executeButton">Execute Task</button>
-    <div id="status" style="margin-top: 10px; color: #666;"></div>
-    
-    <script src="popup.js"></script>
+  <h1>YouTube Shorts Related Video Linker</h1>
+  
+  <label for="videoTitle">Tên video:</label>
+  <input type="text" id="videoTitle" placeholder="Tên đầy đủ và chính xác video bạn muốn gắn">
+  
+  <button id="startButton">Bắt đầu</button>
+  
+  <div class="control-buttons">
+    <button id="pauseButton">Tạm dừng</button>
+    <button id="resumeButton">Tiếp tục</button>
+    <button id="stopButton">Dừng hẳn</button>
+  </div>
+  
+  <div id="statusMessage" class="status-message"></div>
+
+  <script src="popup.js"></script>
 </body>
 </html>
