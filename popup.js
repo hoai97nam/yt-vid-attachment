@@ -22,21 +22,18 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
       
-      // If in trial mode, increment usage count
-      if (!hasValidLicense) {
-        chrome.storage.sync.set({ usageCount: usageCount + 1 });
-        const remaining = 10 - (usageCount + 1);
-        if (remaining > 0) {
-          showStatusMessage(`Bạn còn ${remaining} lượt dùng thử.`, 'warning');
-        }
-      }
+      // Don't increment usage count here anymore
+      // Instead, we'll send the current usage info to content script
+      // and let it increment after successful save
       
       // Gửi thông tin đến content script
       chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
         chrome.tabs.sendMessage(tabs[0].id, {
           action: 'start',
           videoTitle: videoTitle,
-          isForKids: false // Luôn gửi false vì đã mặc định chọn "Không dành cho trẻ em"
+          isForKids: false, // Luôn gửi false vì đã mặc định chọn "Không dành cho trẻ em"
+          hasValidLicense: hasValidLicense,
+          usageCount: usageCount
         });
         showStatusMessage('Đã bắt đầu quá trình', 'success');
       });
@@ -229,4 +226,28 @@ document.addEventListener('DOMContentLoaded', function() {
       licenseMessage.style.color = '#c62828';
     }
   }
+  
+  // Add at the end of the DOMContentLoaded event listener
+  
+  // Listen for messages from content script
+  chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+    if (request.action === 'save-success' && !request.hasValidLicense) {
+      // Increment usage count after successful save
+      chrome.storage.sync.get(['usageCount'], function(result) {
+        const currentCount = result.usageCount || 0;
+        const newCount = currentCount + 1;
+        
+        chrome.storage.sync.set({ usageCount: newCount }, function() {
+          const remaining = Math.max(0, 10 - newCount);
+          if (remaining > 0) {
+            showStatusMessage(`Lưu thành công! Bạn còn ${remaining} lượt dùng thử.`, 'warning');
+          } else {
+            showStatusMessage('Lưu thành công! Đây là lượt dùng thử cuối cùng của bạn.', 'warning');
+          }
+        });
+      });
+    } else if (request.action === 'save-success' && request.hasValidLicense) {
+      showStatusMessage('Lưu thành công!', 'success');
+    }
+  });
 });

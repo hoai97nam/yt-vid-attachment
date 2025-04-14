@@ -72,12 +72,21 @@ async function canUseFeature() {
 }
 
 // Listen for messages from popup
+// In your content.js file, modify the message listener to store license info
+let hasValidLicense = false;
+let currentUsageCount = 0;
+
+// Update your message listener
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   if (request.action === 'start') {
     videoTitle = request.videoTitle;
     isForKids = request.isForKids;
     isPaused = false;
     isStopped = false;
+    
+    // Store license info
+    hasValidLicense = request.hasValidLicense;
+    currentUsageCount = request.usageCount;
     
     console.log('Starting process with video title:', videoTitle);
     console.log('Is for kids:', isForKids);
@@ -363,6 +372,9 @@ async function startProcess() {
             
             if (saveConfirmed) {
               console.log('Thông báo "Đã lưu thay đổi" đã xuất hiện');
+              
+              // Notify popup about successful save
+              notifySaveSuccess();
               
               // Đợi thông báo biến mất
               await sleep(3000);
@@ -697,4 +709,108 @@ async function elementExists(...xpaths) {
 // Helper function to sleep
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Then, after a successful save operation in your content.js, add:
+function notifySaveSuccess() {
+  chrome.runtime.sendMessage({
+    action: 'save-success',
+    hasValidLicense: hasValidLicense
+  });
+}
+
+// Call this function after each successful save operation
+// For example, after you see the "Đã lưu thay đổi" message:
+
+if (saveConfirmed) {
+  console.log('Thông báo "Đã lưu thay đổi" đã xuất hiện');
+  
+  // Notify popup about successful save
+  notifySaveSuccess();
+  
+  // Đợi thông báo biến mất
+  await sleep(3000);
+  
+  // Kiểm tra xem thông báo đã biến mất chưa
+  const confirmationGone = !(await elementExists(
+    "//div[contains(text(), 'Đã lưu thay đổi')]",
+    "//span[contains(text(), 'Đã lưu thay đổi')]",
+    "//tp-yt-paper-toast[contains(., 'Đã lưu thay đổi')]"
+  ));
+  
+  if (confirmationGone) {
+    console.log('Save confirmation message has disappeared');
+  } else {
+    console.log('Save confirmation message still visible, waiting a bit longer');
+    await sleep(3000); // Wait a bit longer if message is still visible
+  }
+  
+  // Wait an additional second before clicking back
+  await sleep(1000);
+  
+  // Click the back button to return to the previous page
+  let backButtonClicked = false;
+  
+  // Try the first selector from XPath Helper
+  try {
+    const backButton = document.querySelector("#back-button");
+    if (backButton) {
+      backButton.click();
+      backButtonClicked = true;
+      console.log('Clicked back button using ID selector');
+    }
+  } catch (e) {
+    console.log('Error clicking back button with ID selector:', e);
+  }
+  
+  // Try the exact XPath from the screenshot
+  if (!backButtonClicked) {
+    try {
+      await waitAndClick("//tp-yt-paper-icon-button[@id='back-button']", "Back button not found", 5000);
+      backButtonClicked = true;
+      console.log('Clicked back button using exact XPath');
+    } catch (e) {
+      console.log('Error clicking back button with exact XPath:', e);
+    }
+  }
+  
+  // Try the CSS selector from the screenshot
+  if (!backButtonClicked) {
+    try {
+      const backButtonCSS = document.querySelector("[id='back-button']");
+      if (backButtonCSS) {
+        backButtonCSS.click();
+        backButtonClicked = true;
+        console.log('Clicked back button using CSS ID selector');
+      }
+    } catch (e) {
+      console.log('Error clicking back button with CSS ID selector:', e);
+    }
+  }
+  
+  if (!backButtonClicked) {
+    // Thử các phương pháp khác để quay lại trang trước
+    try {
+      window.history.back();
+      backButtonClicked = true;
+      console.log('Used browser history back() as fallback');
+    } catch (e) {
+      console.log('Error using history.back():', e);
+    }
+  }
+  
+  if (backButtonClicked) {
+    console.log('Đã quay lại trang danh sách video');
+    // Chờ trang danh sách video tải
+    await sleep(3000);
+    
+    // Tăng chỉ số video để xử lý video tiếp theo
+    videoIndex++;
+  } else {
+    console.warn('Không thể quay lại trang danh sách video, kết thúc quy trình');
+    continueProcessing = false;
+  }
+} else {
+  console.warn('Save confirmation message did not appear');
+  continueProcessing = false;
 }
