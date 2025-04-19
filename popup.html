@@ -74,20 +74,118 @@
       display: none;
       font-weight: bold;
     }
+    .password-container {
+      margin-bottom: 15px;
+    }
+    #passwordInput {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 5px;
+      box-sizing: border-box;
+    }
+    #activateButton {
+      width: 100%;
+      padding: 10px;
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    #activateButton:hover {
+      background-color: #3367d6;
+    }
+    #mainContent {
+      display: none;
+    }
+    .counter-container {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: bold;
+      color: #4285f4;
+      padding: 5px;
+      border-top: 1px solid #e0e0e0;
+    }
+    /* Add styles for login button */
+    #loginButton {
+      width: auto;
+      background-color: #4285f4;
+      font-size: 12px;
+      padding: 5px 10px;
+      margin-top: 10px;
+    }
+    #loginButton:hover {
+      background-color: #3367d6;
+    }
+    #logoutButton {
+      width: auto;
+      background-color: #757575;
+      font-size: 12px;
+      padding: 5px 10px;
+    }
+    .auth-container {
+      margin-top: 15px;
+      text-align: right;
+    }
+    .purchase-link {
+      display: block;
+      margin-top: 10px;
+      text-align: center;
+      color: #ff6600;
+      font-weight: bold;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    .purchase-link:hover {
+      color: #cc5200;
+    }
+    .trial-message {
+      color: #ff6600;
+      font-weight: bold;
+      margin-top: 5px;
+      text-align: center;
+      font-size: 13px;
+    }
   </style>
 </head>
 <body>
   <h1>YouTube Shorts Related Video Linker</h1>
   
-  <label for="videoTitle">Tên video:</label>
-  <input type="text" id="videoTitle" placeholder="Tên đầy đủ và chính xác video bạn muốn gắn">
+  <div id="passwordSection">
+    <label for="passwordInput">Nhập mã kích hoạt:</label>
+    <input type="password" id="passwordInput" placeholder="Nhập mã kích hoạt để sử dụng">
+    <button id="activateButton">Kích hoạt</button>
+    
+    <!-- Keep only one trial message and purchase link -->
+    <div class="trial-message">Phiên dùng thử đã hết. Vui lòng nhập mã kích hoạt để tiếp tục sử dụng.</div>
+    <a href="https://sowl.co/p/4v3ps" target="_blank" class="purchase-link">Mua mã kích hoạt tại đây</a>
+    
+    <!-- Remove redundant login button -->
+  </div>
   
-  <button id="startButton">Bắt đầu</button>
-  
-  <div class="control-buttons">
-    <button id="pauseButton">Tạm dừng</button>
-    <button id="resumeButton">Tiếp tục</button>
-    <button id="stopButton">Dừng hẳn</button>
+  <div id="mainContent">
+    <label for="videoTitle">Tên video:</label>
+    <input type="text" id="videoTitle" placeholder="Tên đầy đủ và chính xác video bạn muốn gắn">
+    
+    <button id="startButton">Bắt đầu</button>
+    
+    <div class="control-buttons">
+      <button id="pauseButton">Tạm dừng</button>
+      <button id="resumeButton">Tiếp tục</button>
+      <button id="stopButton">Dừng hẳn</button>
+    </div>
+    
+    <!-- Thêm phần hiển thị số lượng video đã hoàn thành -->
+    <div id="counterContainer" class="counter-container" style="display: none;">
+      Đã hoàn thành: <span id="completedCounter">0</span> video
+    </div>
+    
+    <!-- Modified logout container to be initially hidden -->
+    <div class="auth-container">
+      <button id="logoutButton" style="display: none;">Đăng xuất</button>
+    </div>
   </div>
   
   <div id="statusMessage" class="status-message"></div>

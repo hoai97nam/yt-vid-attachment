@@ -1,89 +1,34 @@
+//2
 // Global variables
 let videoTitle = '';
 let isForKids = false;
 let isPaused = false;
 let isStopped = false;
-
-// Valid license keys
-const validKeys = [
-  'KEY-12345-ABCDE',
-  'KEY-67890-FGHIJ',
-  'KEY-54321-KLMNO',
-  'KEY-09876-PQRST',
-  'KEY-13579-UVWXY'
-];
-
-// Check if license key is valid
-function isValidKey(key) {
-  return validKeys.includes(key);
-}
-
-// Get saved license key from storage
-function getSavedLicenseKey() {
-  return new Promise((resolve) => {
-    chrome.storage.sync.get(['licenseKey'], (result) => {
-      resolve(result.licenseKey || null);
-    });
-  });
-}
-
-// Check if user has a valid license
-async function hasValidLicense() {
-  const key = await getSavedLicenseKey();
-  return key && isValidKey(key);
-}
-
-// Get usage count from storage
-function getUsageCount() {
-  return new Promise((resolve) => {
-    chrome.storage.sync.get(['usageCount'], (result) => {
-      resolve(result.usageCount || 0);
-    });
-  });
-}
-
-// Increment usage count in storage
-function incrementUsageCount() {
-  return new Promise((resolve) => {
-    getUsageCount().then(count => {
-      const newCount = count + 1;
-      chrome.storage.sync.set({ usageCount: newCount }, () => {
-        resolve(newCount);
-      });
-    });
-  });
-}
-
-// Check if user can use the feature (has valid license or trial uses remaining)
-async function canUseFeature() {
-  // Check for valid license first
-  if (await hasValidLicense()) {
-    return { canUse: true, licensed: true };
-  }
-  
-  // Check trial usage
-  const count = await getUsageCount();
-  return {
-    canUse: count < 10,
-    licensed: false,
-    usageCount: count,
-    remainingUses: Math.max(0, 10 - count)
-  };
-}
+let completedVideos = 0; // Thêm biến đếm số video đã hoàn thành
 
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   if (request.action === 'start') {
-    videoTitle = request.videoTitle;
-    isForKids = request.isForKids;
-    isPaused = false;
-    isStopped = false;
-    
-    console.log('Starting process with video title:', videoTitle);
-    console.log('Is for kids:', isForKids);
-    
-    // Check license before starting
-    checkLicenseAndStart();
+    // First verify if we can proceed (trial active or fully activated)
+    chrome.runtime.sendMessage({action: 'verifyTrialBeforeStart'}, function(response) {
+      if (response && response.canProceed) {
+        videoTitle = request.videoTitle;
+        isForKids = request.isForKids;
+        isPaused = false;
+        isStopped = false;
+        completedVideos = 0;
+        
+        console.log('Starting process with video title:', videoTitle);
+        console.log('Is for kids:', isForKids);
+        
+        // Start the process
+        startProcess();
+      } else {
+        // Trial has ended and not activated
+        console.log('Trial period has ended. Process cannot start.');
+        alert('Phiên dùng thử đã hết. Vui lòng nhập mã kích hoạt để tiếp tục sử dụng.');
+      }
+    });
   } else if (request.action === 'pause') {
     isPaused = true;
     console.log('Process paused');
@@ -93,115 +38,14 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   } else if (request.action === 'stop') {
     isStopped = true;
     console.log('Process stopped');
-  } else if (request.action === 'validateKey') {
-    const isValid = isValidKey(request.key);
-    if (isValid) {
-      chrome.storage.sync.set({ licenseKey: request.key }, () => {
-        sendResponse({ success: true, message: 'License key hợp lệ!' });
-      });
-    } else {
-      sendResponse({ success: false, message: 'License key không hợp lệ.' });
-    }
-    return true; // Keep the message channel open for async response
+  } else if (request.action === 'trialEnded') {
+    // Force stop the process when trial ends
+    isStopped = true;
+    console.log('Trial period ended. Process stopped.');
+    alert('Phiên dùng thử đã hết. Vui lòng nhập mã kích hoạt để tiếp tục sử dụng.');
   }
+  // ... rest of the message handler
 });
-
-// Check license and start process if allowed
-async function checkLicenseAndStart() {
-  const licenseStatus = await canUseFeature();
-  
-  if (licenseStatus.canUse) {
-    // If not licensed but can use (trial), increment usage count
-    if (!licenseStatus.licensed) {
-      await incrementUsageCount();
-    }
-    
-    // Start the process
-    startProcess();
-  } else {
-    // Cannot use feature - show license prompt
-    showLicensePrompt();
-  }
-}
-
-// Show license prompt when trial is expired
-function showLicensePrompt() {
-  // Create modal overlay
-  const overlay = document.createElement('div');
-  overlay.style.position = 'fixed';
-  overlay.style.top = '0';
-  overlay.style.left = '0';
-  overlay.style.width = '100%';
-  overlay.style.height = '100%';
-  overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-  overlay.style.zIndex = '10000';
-  overlay.style.display = 'flex';
-  overlay.style.justifyContent = 'center';
-  overlay.style.alignItems = 'center';
-  
-  // Create modal content
-  const modal = document.createElement('div');
-  modal.style.backgroundColor = 'white';
-  modal.style.padding = '20px';
-  modal.style.borderRadius = '5px';
-  modal.style.width = '400px';
-  modal.style.maxWidth = '90%';
-  modal.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
-  
-  // Create modal content
-  modal.innerHTML = `
-    <h2 style="color: #c62828; margin-top: 0;">Hết lượt dùng thử</h2>
-    <p>Bạn đã sử dụng hết 10 lượt dùng thử của tiện ích này.</p>
-    <p>Vui lòng nhập license key để tiếp tục sử dụng không giới hạn.</p>
-    <div style="margin: 15px 0;">
-      <input type="text" id="license-key-input" placeholder="Nhập license key của bạn" 
-        style="width: 100%; padding: 8px; box-sizing: border-box; margin-bottom: 10px;">
-      <div id="key-message" style="margin-bottom: 10px; color: #c62828;"></div>
-      <button id="activate-key-btn" style="background-color: #1565c0; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
-        Kích hoạt
-      </button>
-      <button id="cancel-key-btn" style="background-color: #f5f5f5; color: #333; border: none; padding: 8px 15px; border-radius: 4px; margin-left: 10px; cursor: pointer;">
-        Hủy
-      </button>
-    </div>
-  `;
-  
-  overlay.appendChild(modal);
-  document.body.appendChild(overlay);
-  
-  // Add event listeners
-  document.getElementById('activate-key-btn').addEventListener('click', () => {
-    const keyInput = document.getElementById('license-key-input');
-    const key = keyInput.value.trim();
-    const messageEl = document.getElementById('key-message');
-    
-    if (!key) {
-      messageEl.textContent = 'Vui lòng nhập license key';
-      return;
-    }
-    
-    if (isValidKey(key)) {
-      // Save valid key to storage
-      chrome.storage.sync.set({ licenseKey: key }, () => {
-        messageEl.textContent = 'License key hợp lệ! Bạn đã kích hoạt phiên bản đầy đủ.';
-        messageEl.style.color = '#2e7d32';
-        
-        // Remove overlay after successful activation
-        setTimeout(() => {
-          document.body.removeChild(overlay);
-          // Start the process now that we have a valid key
-          startProcess();
-        }, 1500);
-      });
-    } else {
-      messageEl.textContent = 'License key không hợp lệ. Vui lòng thử lại.';
-    }
-  });
-  
-  document.getElementById('cancel-key-btn').addEventListener('click', () => {
-    document.body.removeChild(overlay);
-  });
-}
 
 // Thêm hàm để kiểm tra trạng thái tạm dừng
 async function checkPaused() {
@@ -215,6 +59,24 @@ async function checkPaused() {
     throw new Error('Process was stopped by user');
   }
 }
+
+// Thêm hàm kiểm tra trạng thái kích hoạt
+async function checkActivationStatus() {
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage({action: 'checkTrialStatus'}, function(response) {
+      if (!response.activated && !response.trialActive) {
+        // Nếu không được kích hoạt và phiên dùng thử đã hết
+        isStopped = true;
+        console.log('Trial period has ended during processing. Process stopped.');
+        alert('Phiên dùng thử đã hết. Vui lòng nhập mã kích hoạt để tiếp tục sử dụng.');
+        resolve(false);
+      } else {
+        resolve(true);
+      }
+    });
+  });
+}
+
 async function checkRowHasCheckmark(index) {
   // Find the row container element
   const rowContainerXPath = `(//a[@id='video-title'])[${index}]`;
@@ -272,13 +134,17 @@ async function startProcess() {
       // Kiểm tra trạng thái tạm dừng
       await checkPaused();
       
+      // Kiểm tra trạng thái kích hoạt trước mỗi video
+      const canContinue = await checkActivationStatus();
+      if (!canContinue || isStopped) {
+        console.log('Process stopped due to trial limitations or user action');
+        break;
+      }
+      
       console.log(`Bắt đầu xử lý video thứ ${videoIndex}`);
       
-      try {      
-        
-        console.log(`Video thứ ${videoIndex} có checkmark, bắt đầu xử lý.`);
-        
-        // Now proceed with the original video processing logic
+      try {
+        // Wait for the video index to be available and click it
         const videoXPath = `(//a[@id='video-title'])[${videoIndex}]`;
         const videoExists = await elementExists(videoXPath);
         
@@ -293,7 +159,7 @@ async function startProcess() {
         if (!hasCheckmark) {
           console.log(`Video thứ ${videoIndex} không có checkmark, bỏ qua.`);
           videoIndex++;
-          continue; // Skip to the next video
+          continue;
         }
         
         await waitAndClick(videoXPath, `Video thứ ${videoIndex} không tìm thấy`);
@@ -595,6 +461,15 @@ async function startProcess() {
               // Chờ trang danh sách video tải
               await sleep(3000);
               
+              // Tăng số lượng video đã hoàn thành
+              completedVideos++;
+              
+              // Gửi thông báo cập nhật số lượng video đã hoàn thành
+              chrome.runtime.sendMessage({
+                action: 'updateCompletedCount',
+                count: completedVideos
+              });
+              
               // Tăng chỉ số video để xử lý video tiếp theo
               videoIndex++;
             } else {
@@ -624,7 +499,7 @@ async function startProcess() {
       }
     }
     
-    console.log('Đã hoàn thành xử lý tất cả video');
+    console.log(`Đã hoàn thành xử lý tất cả video. Tổng số: ${completedVideos}`);
     
   } catch (error) {
     console.error('Error in process:', error);
