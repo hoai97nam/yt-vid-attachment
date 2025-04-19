@@ -59,6 +59,13 @@ document.addEventListener('DOMContentLoaded', function() {
       const observer = new MutationObserver(function(mutations) {
         // Show alert notification when changes are detected
         console.log("new message!!");
+        callOpenRouterApi("translate 'yellow' to vietnamese?")
+          .then(response => {
+            console.log("AI Response:", response);
+          })
+          .catch(error => {
+            console.error("Error calling API:", error);
+          });
       });
       
       // Start observing the target node for configured mutations
