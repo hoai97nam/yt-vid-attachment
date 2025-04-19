@@ -6,30 +6,24 @@ This is a simple Chrome extension that provides a popup UI with three input fiel
 
 ## Features
 
-- Three input fields for user input
-- A button to execute tasks based on the input
+- Automatically attches related video to the selected video Short.
 
 ## Installation
 
-1. Clone the repository:
-   ```
-   git clone <repository-url>
-   ```
-
-2. Navigate to the project directory:
-   ```
-   cd my-chrome-extension
-   ```
-
-3. Load the extension in Chrome:
-   - Open Chrome and go to `chrome://extensions/`
-   - Enable "Developer mode"
-   - Click on "Load unpacked" and select the `my-chrome-extension` directory
+Go to Chrome store
+Search for "My Chrome Extension"
+Click on the extension icon to open the popup.
 
 ## Usage
 
 - Click on the extension icon in the Chrome toolbar to open the popup.
 - Enter values in the input fields and click the button to execute the desired tasks.
+
+## [Releases](https://github.com/hoai97nam/yt-vid-attachment/releases)
+
+- [v1.1](https://github.com/hoai97nam/yt-vid-attachment/releases/tag/v1.1): Test version with logs and basic features.
+- [v1.2](https://github.com/hoai97nam/yt-vid-attachment/releases/tag/v1.2): Payment and selective version.
+- [v1.2.2](https://github.com/hoai97nam/yt-vid-attachment/releases/tag/v1.2.2): 19042025.
 
 ## License
 
