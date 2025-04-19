@@ -1,69 +1,103 @@
 document.addEventListener('DOMContentLoaded', function() {
-    const executeButton = document.getElementById('executeButton');
-    const statusDiv = document.getElementById('status');
-    
-    executeButton.addEventListener('click', function() {
-        const targetXPath = document.getElementById('targetXPath').value;
-        const delayTime = parseInt(document.getElementById('delayTime').value) || 2000;
-        const forChildren = document.getElementById('forChildrenToggle').checked;
+  // Get all the buttons
+  const redButton = document.getElementById('red');
+  const greenButton = document.getElementById('green');
+  const blueButton = document.getElementById('blue');
+  const resetButton = document.getElementById('reset');
+  
+  // Add new button for message monitoring
+  const monitorButton = document.createElement('button');
+  monitorButton.id = 'monitor';
+  monitorButton.textContent = 'Monitor Messages';
+  monitorButton.style.backgroundColor = '#ff9900';
+  monitorButton.style.color = 'white';
+  monitorButton.style.margin = '5px';
+  monitorButton.style.padding = '5px 10px';
+  monitorButton.style.cursor = 'pointer';
+  monitorButton.style.border = 'none';
+  monitorButton.style.borderRadius = '4px';
+  document.body.appendChild(monitorButton);
 
-        if (!targetXPath) {
-            statusDiv.textContent = 'Please fill in all XPath fields';
-            statusDiv.style.color = 'red';
-            return;
-        }
-
-        // Update status to show we're starting
-        statusDiv.textContent = 'Starting task...';
-        statusDiv.style.color = 'blue';
-
-        // Send message to the active tab to execute the task
-        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-            if (!tabs || tabs.length === 0) {
-                statusDiv.textContent = 'Error: No active tab found';
-                statusDiv.style.color = 'red';
-                return;
-            }
-            
-            // Check if we can inject into this tab
-            const currentUrl = tabs[0].url;
-            if (!currentUrl.includes('youtube.com')) {
-                statusDiv.textContent = 'Error: This extension only works on YouTube';
-                statusDiv.style.color = 'red';
-                return;
-            }
-            
-            // First, inject the content script to ensure it's loaded
-            chrome.scripting.executeScript({
-                target: { tabId: tabs[0].id },
-                files: ['common.js']
-            }, function(injectionResults) {
-                // Check for injection errors
-                if (chrome.runtime.lastError) {
-                    statusDiv.textContent = 'Error: ' + chrome.runtime.lastError.message;
-                    statusDiv.style.color = 'red';
-                    return;
-                }
-                
-                // Now send the message after ensuring the script is loaded
-                chrome.tabs.sendMessage(tabs[0].id, {
-                    action: "executeClickSequence",
-                    targetXPath: targetXPath,
-                    delayTime: delayTime,
-                    forChildren: forChildren
-                }, function(response) {
-                    if (chrome.runtime.lastError) {
-                        statusDiv.textContent = 'Error: ' + chrome.runtime.lastError.message;
-                        statusDiv.style.color = 'red';
-                    } else if (response && response.status === 'success') {
-                        statusDiv.textContent = `Task started successfully! Processing ${response.itemsProcessed} items.`;
-                        statusDiv.style.color = 'green';
-                    } else {
-                        statusDiv.textContent = 'Error: ' + (response ? response.message : 'No response from page');
-                        statusDiv.style.color = 'red';
-                    }
-                });
-            });
-        });
+  // Function to change background color
+  function changeBackgroundColor(color) {
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      chrome.scripting.executeScript({
+        target: {tabId: tabs[0].id},
+        function: setBackgroundColor,
+        args: [color]
+      });
     });
+  }
+
+  // Function that will be executed in the context of the page
+  function setBackgroundColor(color) {
+    document.body.style.backgroundColor = color;
+  }
+  
+  // Function to start monitoring WhatsApp messages
+  function startMonitoringMessages() {
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      chrome.scripting.executeScript({
+        target: {tabId: tabs[0].id},
+        function: setupMessageMonitor
+      });
+    });
+  }
+  
+  // Function that will be executed in the context of the page to monitor messages
+  function setupMessageMonitor() {
+    // Function to get element by XPath
+    function getElementByXpath(path) {
+      return document.evaluate(path, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+    }
+    
+    // Get the message container element
+    const messageContainer = getElementByXpath('//*[@id="main"]/div[3]/div/div[2]/div[2]');
+    
+    if (messageContainer) {
+      // Create a MutationObserver instance
+      const observer = new MutationObserver(function(mutations) {
+        // Show alert notification when changes are detected
+        console.log("new message!!");
+      });
+      
+      // Start observing the target node for configured mutations
+      observer.observe(messageContainer, { 
+        childList: true,
+        // subtree: true,
+        // characterData: true
+      });
+      
+      // Add a flag to indicate monitoring is active
+      window._whatsappMonitorActive = true;
+      
+      console.log("WhatsApp message monitoring started!");
+      alert("WhatsApp message monitoring started!");
+    } else {
+      console.error("Message container not found. Are you on WhatsApp Web?");
+      alert("Message container not found. Please make sure you're on WhatsApp Web and have a chat open.");
+    }
+  }
+
+  // Add click event listeners to buttons
+  redButton.addEventListener('click', function() {
+    changeBackgroundColor('#ffcccc');
+  });
+
+  greenButton.addEventListener('click', function() {
+    changeBackgroundColor('#ccffcc');
+  });
+
+  blueButton.addEventListener('click', function() {
+    changeBackgroundColor('#ccccff');
+  });
+
+  resetButton.addEventListener('click', function() {
+    changeBackgroundColor('');
+  });
+  
+  // Add click event listener for the monitor button
+  monitorButton.addEventListener('click', function() {
+    startMonitoringMessages();
+  });
 });
