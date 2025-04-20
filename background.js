@@ -22,7 +22,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
           console.log('Trial usage updated:', newCount);
           
           // If trial limit reached (3 videos)
-          if (newCount >= 3) {
+          if (newCount >= 10) {
             chrome.storage.local.set({trialActive: false}, function() {
               console.log('Trial period ended');
               // Notify both popup and content script that trial has ended

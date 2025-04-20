@@ -1,69 +1,114 @@
-// Trong phần xử lý sự kiện DOMContentLoaded
+// In the DOMContentLoaded event handler section
 document.addEventListener('DOMContentLoaded', function() {
-  // Kiểm tra trạng thái kích hoạt và phiên dùng thử
+  // Check activation status and trial period
   chrome.runtime.sendMessage({action: 'checkTrialStatus'}, function(response) {
     if (response.activated) {
-      // Đã kích hoạt đầy đủ
+      // Fully activated
       document.getElementById('passwordSection').style.display = 'none';
       document.getElementById('mainContent').style.display = 'block';
     } else if (response.showActivation) {
-      // Phiên dùng thử đã hết, hiển thị form kích hoạt
+      // Trial period ended, show activation form
       document.getElementById('passwordSection').style.display = 'block';
       document.getElementById('mainContent').style.display = 'none';
-      showStatusMessage('Phiên dùng thử đã hết. Vui lòng nhập mã kích hoạt để tiếp tục sử dụng.', 'warning');
+      showStatusMessage('Thank You!', 'warning');
     } else if (response.trialActive) {
-      // Phiên dùng thử vẫn còn hiệu lực
+      // Trial period still active
       document.getElementById('passwordSection').style.display = 'none';
       document.getElementById('mainContent').style.display = 'block';
     }
   });
   
-  // Thêm sự kiện click cho nút kích hoạt
+  // Add click event for activation button
   document.getElementById('activateButton').addEventListener('click', function() {
     const password = document.getElementById('passwordInput').value.trim();
     
-    if (password === '123456') {
-      // Hiển thị nội dung chính nếu mật khẩu đúng
+    // List of 20 valid activation codes
+    const validActivationCodes = [
+      'YT2023-ABCD-1264',
+      'YT2023-EFGH-5008',
+      'YT2023-IJKL-9012',
+      'YT2023-MNOP-3456',
+      'YT2023-QRST-7890',
+      'YT2023-UVWX-1357',
+      'YT2023-YZAB-2468',
+      'YT2023-CDEF-9753',
+      'YT2023-GHIJ-8642',
+      'YT2023-KLMN-1593',
+      'YT2023-OPQR-7531',
+      'YT2023-STUV-2468',
+      'YT2023-WXYZ-3579',
+      'YT2023-ABEF-4680',
+      'YT2023-CDGH-5791',
+      'YT2023-IJMN-6802',
+      'YT2023-OPST-7913',
+      'YT2023-UVYZ-8024',
+      'YT2023-ACEG-9135',
+    ];
+    
+    if (validActivationCodes.includes(password)) {
+      // Show main content if password is correct
       document.getElementById('passwordSection').style.display = 'none';
       document.getElementById('mainContent').style.display = 'block';
-      showStatusMessage('Đã kích hoạt thành công', 'success');
+      showStatusMessage('Successfully activated', 'success');
       
-      // Lưu trạng thái kích hoạt vào storage
+      // Save activation status to storage
       chrome.storage.local.set({activated: true}, function() {
-        console.log('Đã lưu trạng thái kích hoạt');
+        console.log('Activation status saved');
       });
     } else {
-      // Hiển thị thông báo lỗi nếu mật khẩu sai
-      showStatusMessage('Mã kích hoạt không đúng. Vui lòng thử lại.', 'error');
+      // Show error message if password is incorrect
+      showStatusMessage('Activation code is incorrect. Please try again.', 'error');
     }
+  });
+  
+  // Add event listeners for control buttons
+  document.getElementById('pauseButton').addEventListener('click', function() {
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      chrome.tabs.sendMessage(tabs[0].id, {action: 'pause'});
+      showStatusMessage('Process paused', 'info');
+    });
+  });
+
+  document.getElementById('resumeButton').addEventListener('click', function() {
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      chrome.tabs.sendMessage(tabs[0].id, {action: 'resume'});
+      showStatusMessage('Process resumed', 'success');
+    });
+  });
+
+  document.getElementById('stopButton').addEventListener('click', function() {
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      chrome.tabs.sendMessage(tabs[0].id, {action: 'stop'});
+      showStatusMessage('Process stopped', 'warning');
+    });
   });
 });
 
-// Trong phần xử lý sự kiện onMessage
+// In the onMessage event handler section
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   if (request.action === 'trialEnded' && request.showActivation) {
-    // Hiển thị form kích hoạt khi phiên dùng thử kết thúc
+    // Show activation form when trial period ends
     document.getElementById('passwordSection').style.display = 'block';
     document.getElementById('mainContent').style.display = 'none';
-    showStatusMessage('Phiên dùng thử đã hết. Vui lòng nhập mã kích hoạt để tiếp tục sử dụng.', 'warning');
+    showStatusMessage('Trial period has ended. Please enter activation code to continue using.', 'warning');
   }
   if (request.action === 'updateCompletedCount') {
     document.getElementById('completedCounter').textContent = request.count;
     document.getElementById('counterContainer').style.display = 'block';
   } else if (request.action === 'logoutComplete') {
-    // Khi đăng xuất hoàn tất, hiển thị lại màn hình đăng nhập
+    // When logout is complete, show login screen again
     document.getElementById('passwordSection').style.display = 'block';
     document.getElementById('mainContent').style.display = 'none';
-    document.getElementById('passwordInput').value = ''; // Xóa mật khẩu đã nhập
-    showStatusMessage('Đã đăng xuất thành công', 'success');
+    document.getElementById('passwordInput').value = ''; // Clear entered password
+    showStatusMessage('Successfully logged out', 'success');
   } else if (request.action === 'trialEnded') {
     // Trial period has ended
     document.getElementById('passwordSection').style.display = 'block';
     document.getElementById('mainContent').style.display = 'none';
-    showStatusMessage('Phiên dùng thử đã hết. Vui lòng nhập mã kích hoạt để tiếp tục sử dụng.', 'warning');
+    showStatusMessage('Trial period has ended. Please enter activation code to continue using.', 'warning');
   } else if (request.action === 'noVideoSelected') {
-    // Thông báo khi không có video nào được chọn
-    showStatusMessage('Vui lòng chọn (tick) các video trước khi bắt đầu', 'warning');
+    // Notification when no video is selected
+    showStatusMessage('Please select (tick) the videos before starting', 'warning');
   }
 });
 
@@ -72,7 +117,7 @@ document.getElementById('startButton').addEventListener('click', function() {
   const videoTitle = document.getElementById('videoTitle').value.trim();
   
   if (!videoTitle) {
-    showStatusMessage('Vui lòng nhập tên video', 'error');
+    showStatusMessage('Please enter video name', 'error');
     return;
   }
   
@@ -82,33 +127,33 @@ document.getElementById('startButton').addEventListener('click', function() {
       // Trial ended and not activated
       document.getElementById('passwordSection').style.display = 'block';
       document.getElementById('mainContent').style.display = 'none';
-      showStatusMessage('Phiên dùng thử đã hết. Vui lòng nhập mã kích hoạt để tiếp tục sử dụng.', 'warning');
+      showStatusMessage('Trial period has ended. Please enter activation code to continue using.', 'warning');
     } else {
       // Reset counter when starting new process
       document.getElementById('completedCounter').textContent = '0';
       document.getElementById('counterContainer').style.display = 'block';
       
-      // Gửi thông tin đến content script
+      // Send information to content script
       chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
         chrome.tabs.sendMessage(tabs[0].id, {
           action: 'start',
           videoTitle: videoTitle,
           isForKids: false,
-          onlySelected: true // Chỉ xử lý video được chọn (tick)
+          onlySelected: true // Only process selected (ticked) videos
         });
-        showStatusMessage('Đã bắt đầu quá trình', 'success');
+        showStatusMessage('Process started', 'success');
       });
     }
   });
 });
 
-// Hàm hiển thị thông báo
+// Function to display notifications
 function showStatusMessage(message, type) {
   const statusElement = document.getElementById('statusMessage');
   statusElement.textContent = message;
   statusElement.style.display = 'block';
   
-  // Đặt màu sắc dựa trên loại thông báo
+  // Set color based on notification type
   switch(type) {
     case 'error':
       statusElement.style.color = '#c62828';

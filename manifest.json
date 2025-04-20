@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "YouTube Shorts Related Video Linker",
+  "name": "Bulk Add Related Video to YouTube Shorts",
   "version": "1.0",
   "description": "Automatically attach related videos to YouTube Shorts",
   "permissions": ["activeTab", "scripting", "storage"],

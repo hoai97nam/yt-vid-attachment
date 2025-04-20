@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>YouTube Shorts Related Video Linker</title>
+  <title>Bulk Add Related Video to YouTube Shorts</title>
   <style>
     body {
       width: 300px;
@@ -151,40 +151,35 @@
   </style>
 </head>
 <body>
-  <h1>YouTube Shorts Related Video Linker</h1>
-  
+  <h1>Bulk Add Related Video to YouTube Shorts</h1>
+  <p style="color: #1a73e8; font-size: 13px; margin-bottom: 15px; font-weight: 500; background-color: #e8f0fe; padding: 8px; border-radius: 4px;">Select (tick) the Shorts videos you want to add related video to</p>
+
   <div id="passwordSection">
-    <label for="passwordInput">Nhập mã kích hoạt:</label>
-    <input type="password" id="passwordInput" placeholder="Nhập mã kích hoạt để sử dụng">
-    <button id="activateButton">Kích hoạt</button>
+    <label for="passwordInput">Enter activation code:</label>
+    <input type="password" id="passwordInput" placeholder="Enter activation code to use">
+    <button id="activateButton">Activate</button>
     
-    <!-- Keep only one trial message and purchase link -->
-    <div class="trial-message">Phiên dùng thử đã hết. Vui lòng nhập mã kích hoạt để tiếp tục sử dụng.</div>
-    <a href="https://sowl.co/p/4v3ps" target="_blank" class="purchase-link">Mua mã kích hoạt tại đây</a>
-    
-    <!-- Remove redundant login button -->
+    <div class="trial-message">Trial period has ended. Please enter activation code to continue using</div>
+    <a href="https://sowl.co/p/4v3ps" target="_blank" class="purchase-link">Purchase activation code here</a>
   </div>
   
   <div id="mainContent">
-    <label for="videoTitle">Tên video:</label>
-    <input type="text" id="videoTitle" placeholder="Tên đầy đủ và chính xác video bạn muốn gắn">
+    <input type="text" id="videoTitle" placeholder="Full and exact name of the video you want to attach">
     
-    <button id="startButton">Bắt đầu</button>
+    <button id="startButton">Start</button>
     
     <div class="control-buttons">
-      <button id="pauseButton">Tạm dừng</button>
-      <button id="resumeButton">Tiếp tục</button>
-      <button id="stopButton">Dừng hẳn</button>
+      <button id="pauseButton">Pause</button>
+      <button id="resumeButton">Resume</button>
+      <button id="stopButton">Stop</button>
     </div>
     
-    <!-- Thêm phần hiển thị số lượng video đã hoàn thành -->
     <div id="counterContainer" class="counter-container" style="display: none;">
-      Đã hoàn thành: <span id="completedCounter">0</span> video
+      Completed: <span id="completedCounter">0</span> videos
     </div>
     
-    <!-- Modified logout container to be initially hidden -->
     <div class="auth-container">
-      <button id="logoutButton" style="display: none;">Đăng xuất</button>
+      <button id="logoutButton" style="display: none;">Logout</button>
     </div>
   </div>
   
