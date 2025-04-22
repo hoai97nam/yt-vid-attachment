@@ -1,8 +1,15 @@
 {
   "manifest_version": 3,
-  "name": "Simple Color Changer",
+  "name": "WhatsApp Translator",
   "version": "1.0",
-  "description": "A simple extension that changes webpage background color and monitors WhatsApp messages",
+  "description": "Tự động dịch tin nhắn WhatsApp Web sang tiếng Anh",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": [
+    "https://web.whatsapp.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -11,16 +18,13 @@
       "128": "images/icon128.png"
     }
   },
-  "permissions": ["activeTab", "scripting", "notifications"],
-  "icons": {
-    "16": "images/icon16.png",
-    "48": "images/icon48.png",
-    "128": "images/icon128.png"
-  },
   "content_scripts": [
     {
-      "matches": ["*://*.whatsapp.com/*"],
+      "matches": ["https://web.whatsapp.com/*"],
       "js": ["content.js"]
     }
-  ]
+  ],
+  "externally_connectable": {
+    "matches": ["https://web.whatsapp.com/*"]
+  }
 }
