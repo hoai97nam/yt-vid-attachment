@@ -207,29 +207,60 @@ function createFloatingButton() {
     const targetElement = getElementByXPath('//*[@id="main"]/footer/div[1]/div/span/div/div[2]/div[1]/div[2]/div[1]');
     if (!targetElement) return;
     
-    // Lấy text từ element
-    const textToTranslate = targetElement.innerText.trim();
-    if (!textToTranslate) return;
-    
-    // Hiển thị thông báo đang dịch
-    translationResult.textContent = 'Đang dịch...';
-    translationResult.style.display = 'block';
-    isTranslationVisible = true;
-    
-    // Gọi hàm dịch đã được định nghĩa trước đó
-    chrome.runtime.sendMessage(
-      { action: 'translate', text: textToTranslate },
-      response => {
-        if (response && response.translation) {
-          // Hiển thị kết quả dịch
-          translationResult.innerText = response.translation;
-          // Không tự động ẩn kết quả nữa
+    // Kiểm tra xem đã có bản dịch trong translationResult chưa
+    if (translationResult.style.display === 'block') {
+      console.log('Đã có bản dịch, thực hiện thay thế và gửi tin nhắn');
+      
+      // Thay thế nội dung trong ô nhập liệu bằng bản dịch
+      targetElement.innerText = translationResult.innerText;
+      
+      // Đặt focus vào element để đảm bảo WhatsApp nhận biết thay đổi
+      targetElement.focus();
+      console.log('Đã thay thế nội dung', translationResult.innerText);
+      
+      // Tìm và nhấp vào nút gửi
+      setTimeout(() => {
+        const sendButton = getElementByXPath('//*[@id="main"]/footer/div[1]/div/span/div/div[2]/div[2]/button');
+        if (sendButton) {
+          console.log('Đã tìm thấy nút gửi, đang nhấp...');
+          sendButton.click();
+          
+          // Ẩn container sau khi gửi tin nhắn
+          container.style.display = 'none';
+          translationResult.style.display = 'none';
+          isFloatingButtonActive = false;
+          console.log('Đã ẩn container sau khi gửi tin nhắn');
         } else {
-          translationResult.innerText = 'Lỗi dịch thuật';
-          // Vẫn giữ thông báo lỗi hiển thị
+          console.log('Không tìm thấy nút gửi');
         }
-      }
-    );
+      }, 500); // Đợi 500ms để đảm bảo nội dung đã được cập nhật
+    } else {
+      // Trường hợp chưa có bản dịch, thực hiện dịch mới
+      
+      // Lấy text từ element
+      const textToTranslate = targetElement.innerText.trim();
+      if (!textToTranslate) return;
+      
+      // Hiển thị thông báo đang dịch
+      translationResult.textContent = 'Đang dịch...';
+      translationResult.style.display = 'block';
+      isTranslationVisible = true;
+      
+      // Gọi hàm dịch đã được định nghĩa trước đó
+      chrome.runtime.sendMessage(
+        { action: 'translate', text: textToTranslate },
+        response => {
+          if (response && response.translation) {
+            // Hiển thị kết quả dịch
+            translationResult.innerText = response.translation;
+          // Không tự động ẩn kết quả nữa
+          } else {
+            translationResult.innerText = 'Lỗi dịch thuật';
+            // Vẫn giữ thông báo lỗi hiển thị
+          }
+        }
+      );
+    }
   });
   
   return { container, floatingButton, translationResult };
@@ -240,13 +271,21 @@ function observeTargetElement() {
   const targetXPath = '//*[@id="main"]/footer/div[1]/div/span/div/div[2]/div[1]/div[2]/div[1]';
   const { container, floatingButton, translationResult } = createFloatingButton();
   
+  // Biến để theo dõi trạng thái của floating button
+  let isFloatingButtonActive = false;
+  
   // Hàm để kiểm tra element có được focus và có nội dung không
   function checkElementFocus() {
     const targetElement = getElementByXPath(targetXPath);
     if (!targetElement) return;
     
+    // Nếu floating button đang active, không ẩn container
+    if (isFloatingButtonActive) {
+      return;
+    }
+    
     // Kiểm tra xem element có được focus và có nội dung không
-    if (document.activeElement === targetElement && targetElement.textContent.trim() !== '') {
+    if (document.activeElement === targetElement && (targetElement.textContent.trim() !== '' || floatingButton.style.display !== 'none')) {
       // Hiển thị container ở góc trên bên phải của element
       const rect = targetElement.getBoundingClientRect();
       container.style.left = `${rect.left}px`;
@@ -259,6 +298,22 @@ function observeTargetElement() {
       translationResult.style.display = 'none';
     }
   }
+  
+  // Thêm sự kiện click cho floating button để đánh dấu trạng thái active
+  floatingButton.addEventListener('click', () => {
+    isFloatingButtonActive = true;
+    console.log('Floating button active:', isFloatingButtonActive);
+  });
+  
+  // Thêm sự kiện click cho document để kiểm tra khi click ra ngoài
+  document.addEventListener('click', (event) => {
+    // Kiểm tra xem click có phải vào floating button hoặc translation result không
+    if (!container.contains(event.target) && isFloatingButtonActive) {
+      isFloatingButtonActive = false;
+      console.log('Clicked outside, floating button inactive');
+      checkElementFocus(); // Kiểm tra lại trạng thái hiển thị
+    }
+  });
   
   // Kiểm tra focus và nội dung mỗi 300ms
   setInterval(checkElementFocus, 300);
