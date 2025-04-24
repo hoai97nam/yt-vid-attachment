@@ -212,11 +212,17 @@ function createFloatingButton() {
       console.log('Đã có bản dịch, thực hiện thay thế và gửi tin nhắn');
       
       // Thay thế nội dung trong ô nhập liệu bằng bản dịch
-      targetElement.innerText = translationResult.innerText;
       
       // Đặt focus vào element để đảm bảo WhatsApp nhận biết thay đổi
-      targetElement.focus();
-      console.log('Đã thay thế nội dung', translationResult.innerText);
+      if (targetElement) {
+        targetElement.focus();
+        document.execCommand('selectAll', false, null)
+        setTimeout(() => {
+          document.execCommand('insertText', false, translationResult.innerText);
+        }, 100);
+        console.log('Đã xóa nội dung hiện tại');
+        console.log('Đã thay thế nội dung', translationResult.innerText);
+      }
       
       // Tìm và nhấp vào nút gửi
       setTimeout(() => {
