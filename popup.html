@@ -5,41 +5,73 @@
   <title>WhatsApp Translator</title>
   <style>
     body {
-      width: 300px;
+      width: 250px;
       padding: 10px;
       font-family: Arial, sans-serif;
     }
-    h1 {
-      font-size: 18px;
+    h2 {
+      color: #25D366;
+      font-size: 16px;
       margin-bottom: 15px;
     }
-    .status {
-      padding: 10px;
-      border-radius: 5px;
-      margin-bottom: 10px;
-      background-color: #e8f5e9;
+    .option-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background-color: #f8f8f8;
     }
     button {
-      background-color: #4CAF50;
-      border: none;
+      background-color: #25D366;
       color: white;
-      padding: 8px 16px;
-      text-align: center;
-      text-decoration: none;
-      font-size: 14px;
+      border: none;
+      padding: 8px 15px;
       border-radius: 4px;
       cursor: pointer;
-      display: block;
+      width: 100%;
+      font-weight: bold;
+    }
+    button:hover {
+      background-color: #128C7E;
+    }
+    .status {
       margin-top: 10px;
+      font-size: 12px;
+      color: #666;
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <h1>WhatsApp Translator</h1>
-  <div class="status">
-    Extension đang hoạt động. Tin nhắn mới sẽ được tự động dịch.
+  <h2>WhatsApp Translator</h2>
+  
+  <div class="option-group">
+    <label for="targetLanguage">Ngôn ngữ dịch:</label>
+    <select id="targetLanguage">
+      <option value="English">English</option>
+      <option value="Vietnamese">Vietnamese</option>
+      <option value="French">French</option>
+      <option value="German">German</option>
+      <option value="Spanish">Spanish</option>
+      <option value="Chinese">Chinese</option>
+      <option value="Japanese">Japanese</option>
+      <option value="Korean">Korean</option>
+      <option value="Russian">Russian</option>
+    </select>
   </div>
-  <button id="restart">Khởi động lại</button>
+  
+  <button id="saveButton">Lưu Cài Đặt</button>
+  
+  <div class="status" id="statusMessage"></div>
   
   <script src="popup.js"></script>
 </body>
