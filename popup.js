@@ -1,6 +1,6 @@
 // popup.js - Đặt file này trong thư mục gốc của extension
 document.addEventListener('DOMContentLoaded', function() {
-  // Khởi tạo nút restart
+  // Khởi tạo nút restart nếu có
   const restartButton = document.getElementById('restart');
   if (restartButton) {
     restartButton.addEventListener('click', () => {
@@ -11,10 +11,15 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // Lấy cài đặt ngôn ngữ từ storage
-  chrome.storage.sync.get('targetLanguage', function(data) {
+  chrome.storage.sync.get(['targetLanguage', 'sourceLanguage'], function(data) {
     const targetLanguageSelect = document.getElementById('targetLanguage');
     if (targetLanguageSelect && data.targetLanguage) {
       targetLanguageSelect.value = data.targetLanguage;
+    }
+    
+    const sourceLanguageSelect = document.getElementById('sourceLanguage');
+    if (sourceLanguageSelect && data.sourceLanguage) {
+      sourceLanguageSelect.value = data.sourceLanguage;
     }
   });
   
@@ -23,14 +28,20 @@ document.addEventListener('DOMContentLoaded', function() {
   if (saveButton) {
     saveButton.addEventListener('click', function() {
       const targetLanguageSelect = document.getElementById('targetLanguage');
-      if (!targetLanguageSelect) return;
+      const sourceLanguageSelect = document.getElementById('sourceLanguage');
+      
+      if (!targetLanguageSelect || !sourceLanguageSelect) return;
       
       const targetLanguage = targetLanguageSelect.value;
-      console.log('Ngôn ngữ đã chọn:', targetLanguage);
+      const sourceLanguage = sourceLanguageSelect.value;
+      
+      console.log('Ngôn ngữ đích:', targetLanguage);
+      console.log('Ngôn ngữ gửi đi:', sourceLanguage);
       
       // Lưu cài đặt vào storage
       chrome.storage.sync.set({
-        targetLanguage: targetLanguage
+        targetLanguage: targetLanguage,
+        sourceLanguage: sourceLanguage
       }, function() {
         // Hiển thị thông báo đã lưu
         const statusMessage = document.getElementById('statusMessage');
@@ -42,7 +53,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (tabs && tabs[0]) {
               chrome.tabs.sendMessage(tabs[0].id, {
                 action: "languageChanged",
-                language: targetLanguage
+                targetLanguage: targetLanguage,
+                sourceLanguage: sourceLanguage
               });
             }
           });

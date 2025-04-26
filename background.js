@@ -1,11 +1,21 @@
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'translate') {
-    const API_KEY = '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';
+    const API_KEY = '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';
     
-    // Lấy ngôn ngữ đích từ storage
-    chrome.storage.sync.get('targetLanguage', function(data) {
+    // Lấy ngôn ngữ đích và ngôn ngữ gửi đi từ storage
+    chrome.storage.sync.get(['targetLanguage', 'sourceLanguage'], function(data) {
       // Mặc định là tiếng Anh nếu chưa có cài đặt
       const targetLanguage = data.targetLanguage || 'English';
+      const sourceLanguage = data.sourceLanguage || 'English';
+      
+      // Định nghĩa nội dung system prompt
+      let systemContent = '';
+      
+      if (message.sendTo) {
+        systemContent = `You are a translation tool. Translate the provided text from ${sourceLanguage} into ${targetLanguage}. Return only the translation, nothing else.`;
+      } else {
+        systemContent = `You are a translation tool. Translate the provided text into ${targetLanguage}. Return only the translation, nothing else.`;
+      }
       
       fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
@@ -18,7 +28,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           messages: [
             {
               role: 'system',
-              content: `You are a translation tool. Translate the provided text into ${targetLanguage}. Return only the translation, nothing else.`
+              content: systemContent
             },
             {
               role: 'user',

@@ -254,7 +254,7 @@ function createFloatingButton() {
       
       // Gọi hàm dịch đã được định nghĩa trước đó
       chrome.runtime.sendMessage(
-        { action: 'translate', text: textToTranslate },
+        { action: 'translate', text: textToTranslate, sendTo: true },
         response => {
           if (response && response.translation) {
             // Hiển thị kết quả dịch
