@@ -1,6 +1,7 @@
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === 'translate') {
-    const API_KEY = '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';
+if (message.action === 'translate') {
+    const API_KEY = 'AIzaSyBldYrsk-NeJ0NQ8qNUedFwsMTbsdK99lA';
+    const MODEL = 'gemini-2.0-flash';
     
     // Lấy ngôn ngữ đích và ngôn ngữ gửi đi từ storage
     chrome.storage.sync.get(['targetLanguage', 'sourceLanguage'], function(data) {
@@ -17,31 +18,41 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         systemContent = `You are a translation tool. Translate the provided text into ${targetLanguage}. Return only the translation, nothing else.`;
       }
       
-      fetch('https://openrouter.ai/api/v1/chat/completions', {
+      fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${API_KEY}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'thudm/glm-z1-32b:free',
-          messages: [
+          "contents": [
             {
-              role: 'system',
-              content: systemContent
+              "role": "user",
+              "parts": [
+                {
+                  "text": `${message.text}`
+                }
+              ]
             },
             {
-              role: 'user',
-              content: message.text
-            }
+              "role": "model",
+              "parts": [
+                {
+                  "text": systemContent
+                }
+              ]
+            },
           ],
-          max_tokens: 1000
+          "generationConfig": {
+            "maxOutputTokens": 1000,
+          }
         })
       })
       .then(response => response.json())
       .then(data => {
-        if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
-          sendResponse({ translation: data.choices[0].message.content.trim() });
+        if (data.candidates && data.candidates.length > 0 &&
+          data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts.length > 0) {
+            console.log('Kết quả dịch:', data.candidates[0].content.parts[0].text.trim());
+          sendResponse({ translation: data.candidates[0].content.parts[0].text.trim() });
         } else {
           sendResponse({ translation: 'Lỗi: Không nhận được kết quả dịch hợp lệ' });
         }

@@ -73,6 +73,7 @@ async function handleNewMessage() {
           
           // Thêm placeholder trong khi chờ dịch
           textElement.innerText += '\n---\nĐang dịch...';
+          console.log('Đã thêm placeholder: ', result.text);
           
           // Gửi tin nhắn đến extension background để dịch
           chrome.runtime.sendMessage(
@@ -84,7 +85,7 @@ async function handleNewMessage() {
                 console.log('Đã dịch xong tin nhắn.');
               } else {
                 textElement.innerText = result.text + '\n---\nLỗi dịch thuật';
-                console.error('Không nhận được phản hồi dịch thuật');
+                console.warn('Không nhận được phản hồi dịch thuật');
               }
             }
           );
