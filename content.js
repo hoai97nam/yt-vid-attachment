@@ -19,13 +19,10 @@ function getLastMessageSimple() {
     const messageId = lastMessage.getAttribute('data-id') || '';
     let isFromMe = false;
 
-    // Xét màu nền là #D9FDD3 (rgb(217, 253, 211))
-    const bubble = lastMessage.querySelector('div[style*="background-color"]') || lastMessage;
-    const style = window.getComputedStyle(bubble);
-    const bgColor = style.backgroundColor;
-
-    if (bgColor === 'rgb(217, 253, 211)' || bgColor.includes('217, 253, 211')) {
-      isFromMe = true;
+    // Kiểm tra xem tin nhắn có phải là tin nhắn đến hay không
+    // Tin nhắn đến sẽ có class "message-in" hoặc phần tử cha/con có class này
+    if (!lastMessage.querySelector('.message-in') && !lastMessage.closest('.message-in')) {
+      isFromMe = true; // Nếu không có class "message-in" thì đây là tin nhắn của mình
     }
 
     // Lấy nội dung tin nhắn
@@ -103,7 +100,7 @@ function startMessageObserver() {
   
   const messageContainer = document.querySelector('div[role="application"]');
   if (!messageContainer) {
-    console.error("Không tìm thấy container tin nhắn để theo dõi");
+    console.warn("Không tìm thấy container tin nhắn để theo dõi");
     // Thử lại sau 2 giây nếu trang chưa load xong
     setTimeout(startMessageObserver, 2000);
     return;
@@ -119,7 +116,7 @@ function startMessageObserver() {
 
   observer.observe(messageContainer, {
     childList: true,
-    subtree: true
+    // subtree: true
   });
   
   observerActive = true;
