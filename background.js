@@ -13,7 +13,7 @@ if (message.action === 'translate') {
       let systemContent = '';
       
       if (message.sendTo) {
-        systemContent = `You are a translation tool. Translate the provided text from ${sourceLanguage} into ${targetLanguage}. Return only the translation, nothing else.`;
+        systemContent = `You are a translation tool. Translate the provided text into ${sourceLanguage}. Return only the translation, nothing else. If text is in ${sourceLanguage}, return an original text.`;
       } else {
         systemContent = `You are a translation tool. Translate the provided text into ${targetLanguage}. Return only the translation, nothing else.`;
       }
