@@ -137,7 +137,6 @@ setInterval(() => {
   }
 }, 30000);
 
-// Content script để theo dõi element WhatsApp và hiển thị floating button
 
 // Tạo floating button
 function createFloatingButton() {
@@ -278,6 +277,9 @@ function observeTargetElement() {
   // Biến để theo dõi trạng thái của floating button
   let isFloatingButtonActive = false;
   
+  // Biến để lưu trữ nội dung trước đó
+  let previousContent = '';
+  
   // Hàm để kiểm tra element có được focus và có nội dung không
   function checkElementFocus() {
     const targetElement = getElementByXPath(targetXPath);
@@ -288,20 +290,61 @@ function observeTargetElement() {
       return;
     }
     
+    // Lấy nội dung hiện tại
+    const currentContent = targetElement.textContent.trim();
+    
+    // Kiểm tra xem nội dung có bị xóa không
+    if (previousContent !== '' && currentContent === '') {
+      console.log('Phát hiện xóa hết dữ liệu trong input');
+      // Ẩn container khi dữ liệu bị xóa hết
+      container.style.display = 'none';
+      translationResult.style.display = 'none';
+    }
+    
+    // Cập nhật nội dung trước đó
+    previousContent = currentContent;
+    
     // Kiểm tra xem element có được focus và có nội dung không
-    if (document.activeElement === targetElement && (targetElement.textContent.trim() !== '' || floatingButton.style.display !== 'none')) {
+    if (document.activeElement === targetElement && currentContent !== '') {
       // Hiển thị container ở góc trên bên phải của element
       const rect = targetElement.getBoundingClientRect();
       container.style.left = `${rect.left}px`;
       container.style.top = `${rect.top - 40}px`;
       container.style.display = 'flex';
     } else {
-      // Ẩn container
+      // Ẩn container nếu không có nội dung hoặc không được focus
       container.style.display = 'none';
       // Ẩn kết quả dịch khi container bị ẩn
       translationResult.style.display = 'none';
     }
   }
+  
+  // Thêm sự kiện keydown để phát hiện phím Delete và Backspace
+  document.addEventListener('keydown', (event) => {
+    const targetElement = getElementByXPath(targetXPath);
+    if (!targetElement || document.activeElement !== targetElement) return;
+    
+    // Phát hiện phím Delete hoặc Backspace
+    if (event.key === 'Delete' || event.key === 'Backspace') {
+      console.log('Phát hiện phím xóa:', event.key);
+      
+      // Kiểm tra nếu nội dung sẽ bị xóa hoàn toàn
+      if (targetElement.textContent.length <= 1 || 
+          (window.getSelection().toString() === targetElement.textContent)) {
+        console.log('Toàn bộ nội dung sẽ bị xóa');
+        
+        // Đặt timeout để kiểm tra sau khi nội dung đã được xóa
+        setTimeout(() => {
+          if (targetElement.textContent.trim() === '') {
+            console.log('Nội dung đã bị xóa hoàn toàn');
+            container.style.display = 'none';
+            translationResult.style.display = 'none';
+            isFloatingButtonActive = false;
+          }
+        }, 10);
+      }
+    }
+  });
   
   // Thêm sự kiện click cho floating button để đánh dấu trạng thái active
   floatingButton.addEventListener('click', () => {
@@ -324,7 +367,15 @@ function observeTargetElement() {
   
   // Thêm event listener cho sự kiện input
   document.addEventListener('input', (event) => {
+    console.log('Input event detected');
     if (event.target === getElementByXPath(targetXPath)) {
+      // Kiểm tra nếu nội dung trống
+      if (event.target.textContent.trim() === '') {
+        console.log('Nội dung đã bị xóa qua sự kiện input');
+        container.style.display = 'none';
+        translationResult.style.display = 'none';
+        isFloatingButtonActive = false;
+      }
       checkElementFocus();
     }
   }, true);
@@ -337,6 +388,20 @@ function observeTargetElement() {
   // Thêm event listener cho sự kiện blur
   document.addEventListener('blur', (event) => {
     checkElementFocus();
+  }, true);
+  
+  // Thêm event listener cho sự kiện cut và paste
+  document.addEventListener('cut', (event) => {
+    if (event.target === getElementByXPath(targetXPath)) {
+      setTimeout(() => {
+        if (event.target.textContent.trim() === '') {
+          console.log('Nội dung đã bị cắt hết');
+          container.style.display = 'none';
+          translationResult.style.display = 'none';
+          isFloatingButtonActive = false;
+        }
+      }, 10);
+    }
   }, true);
 }
 
