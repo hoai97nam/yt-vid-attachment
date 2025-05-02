@@ -18,72 +18,48 @@ if (message.action === 'translate') {
         systemContent = `You are a translation tool. Translate the provided text into ${targetLanguage}. Return only the translation, nothing else.`;
       }
       
-      // Hàm thực hiện dịch với số lần thử lại
-      const translateWithRetry = (retryCount = 0, maxRetries = 2) => {
-        console.log(`Đang thực hiện dịch (lần thử ${retryCount + 1}/${maxRetries + 1})`);
-        
-        fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            "contents": [
-              {
-                "role": "user",
-                "parts": [
-                  {
-                    "text": `${message.text}`
-                  }
-                ]
-              },
-              {
-                "role": "model",
-                "parts": [
-                  {
-                    "text": systemContent
-                  }
-                ]
-              },
-            ],
-            "generationConfig": {
-              "maxOutputTokens": 1000,
-            }
-          })
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.candidates && data.candidates.length > 0 &&
-            data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts.length > 0) {
-              console.log('Kết quả dịch:', data.candidates[0].content.parts[0].text.trim());
-            sendResponse({ translation: data.candidates[0].content.parts[0].text.trim() });
-          } else {
-            // Kiểm tra xem có thể thử lại không
-            if (retryCount < maxRetries) {
-              console.log(`Không nhận được kết quả dịch hợp lệ, thử lại lần ${retryCount + 2}`);
-              // Thử lại sau 1 giây
-              setTimeout(() => translateWithRetry(retryCount + 1, maxRetries), 1000);
-            } else {
-              console.log('Đã thử lại tối đa số lần, không thành công');
-              sendResponse({ translation: 'Lỗi: Không nhận được kết quả dịch hợp lệ sau nhiều lần thử' });
-            }
+      fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          "contents": [
+            {
+              "role": "user",
+              "parts": [
+                {
+                  "text": `${message.text}`
+                }
+              ]
+            },
+            {
+              "role": "model",
+              "parts": [
+                {
+                  "text": systemContent
+                }
+              ]
+            },
+          ],
+          "generationConfig": {
+            "maxOutputTokens": 1000,
           }
         })
-        .catch(error => {
-          // Kiểm tra xem có thể thử lại không
-          if (retryCount < maxRetries) {
-            console.log(`Lỗi dịch thuật: ${error.message}, thử lại lần ${retryCount + 2}`);
-            // Thử lại sau 1 giây
-            setTimeout(() => translateWithRetry(retryCount + 1, maxRetries), 1000);
-          } else {
-            console.log('Đã thử lại tối đa số lần, không thành công');
-            sendResponse({ translation: 'Lỗi dịch thuật sau nhiều lần thử: ' + error.message });
-          }
-        });
-      };
-      
-      // Bắt đầu quá trình dịch với khả năng thử lại
-      translateWithRetry();
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.candidates && data.candidates.length > 0 &&
+          data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts.length > 0) {
+            console.log('Kết quả dịch:', data.candidates[0].content.parts[0].text.trim());
+          sendResponse({ translation: data.candidates[0].content.parts[0].text.trim() });
+        } else {
+          sendResponse({ translation: 'Lỗi: Không nhận được kết quả dịch hợp lệ' });
+        }
+      })
+      .catch(error => {
+        sendResponse({ translation: 'Lỗi dịch thuật: ' + error.message });
+      });
     });
     
     return true; // Quan trọng: Giữ kết nối mở cho sendResponse bất đồng bộ
