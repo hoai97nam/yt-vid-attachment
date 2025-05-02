@@ -314,7 +314,7 @@ function observeTargetElement() {
     previousContent = currentContent;
     
     // Kiểm tra xem element có được focus và có nội dung không
-    if (document.activeElement === targetElement.parentElement && currentContent !== '') {
+    if (document.activeElement === targetElement?.parentElement && currentContent !== '') {
       // Hiển thị container ở góc trên bên phải của element
       const rect = targetElement.getBoundingClientRect();
       container.style.left = `${rect.left}px`;
