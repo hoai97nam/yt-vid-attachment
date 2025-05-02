@@ -2,6 +2,10 @@
 let lastSeenMessageId = '';
 let observerActive = false;
 
+// Khai báo biến const để lưu XPath của ô textbox nhập tin nhắn
+const TEXT_INPUT_XPATH = '//*[@id="main"]/footer/div[1]/div/span/div/div[2]/div/div[3]/div/p';
+const SEND_BUTTON_XPATH = '//*[@id="main"]/footer/div[1]/div/span/div/div[2]/div/div[4]/button';
+
 function getElementByXPath(xpath) {
   return document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
 }
@@ -115,8 +119,7 @@ function startMessageObserver() {
   });
 
   observer.observe(messageContainer, {
-    childList: true,
-    // subtree: true
+    childList: true
   });
   
   observerActive = true;
@@ -201,7 +204,11 @@ function createFloatingButton() {
     console.log('Floating button clicked!');
     
     // Lấy element đang được focus
-    const targetElement = getElementByXPath('//*[@id="main"]/footer/div[1]/div/span/div/div[2]/div[1]/div[2]/div[1]');
+    let targetElement;
+    targetElement = getElementByXPath(TEXT_INPUT_XPATH);
+    if (!targetElement) {
+      targetElement = document.querySelectorAll('div[role="textbox]')[1]?.children[0];
+    }
     if (!targetElement) return;
     
     // Kiểm tra xem đã có bản dịch trong translationResult chưa
@@ -223,7 +230,7 @@ function createFloatingButton() {
       
       // Tìm và nhấp vào nút gửi
       setTimeout(() => {
-        const sendButton = getElementByXPath('//*[@id="main"]/footer/div[1]/div/span/div/div[2]/div[2]/button');
+        const sendButton = getElementByXPath(SEND_BUTTON_XPATH);
         if (sendButton) {
           console.log('Đã tìm thấy nút gửi, đang nhấp...');
           sendButton.click();
@@ -271,7 +278,6 @@ function createFloatingButton() {
 
 // Theo dõi element và hiển thị floating button
 function observeTargetElement() {
-  const targetXPath = '//*[@id="main"]/footer/div[1]/div/span/div/div[2]/div[1]/div[2]/div[1]';
   const { container, floatingButton, translationResult } = createFloatingButton();
   
   // Biến để theo dõi trạng thái của floating button
@@ -282,8 +288,11 @@ function observeTargetElement() {
   
   // Hàm để kiểm tra element có được focus và có nội dung không
   function checkElementFocus() {
-    const targetElement = getElementByXPath(targetXPath);
-    if (!targetElement) return;
+    let targetElement;
+    targetElement = getElementByXPath(TEXT_INPUT_XPATH);
+    if (!targetElement) {
+      targetElement = document.querySelectorAll('div[role="textbox]')[1]?.children[0];
+    }
     
     // Nếu floating button đang active, không ẩn container
     if (isFloatingButtonActive) {
@@ -291,7 +300,7 @@ function observeTargetElement() {
     }
     
     // Lấy nội dung hiện tại
-    const currentContent = targetElement.textContent.trim();
+    const currentContent = targetElement?.textContent.trim();
     
     // Kiểm tra xem nội dung có bị xóa không
     if (previousContent !== '' && currentContent === '') {
@@ -305,7 +314,7 @@ function observeTargetElement() {
     previousContent = currentContent;
     
     // Kiểm tra xem element có được focus và có nội dung không
-    if (document.activeElement === targetElement && currentContent !== '') {
+    if (document.activeElement === targetElement.parentElement && currentContent !== '') {
       // Hiển thị container ở góc trên bên phải của element
       const rect = targetElement.getBoundingClientRect();
       container.style.left = `${rect.left}px`;
@@ -321,7 +330,7 @@ function observeTargetElement() {
   
   // Thêm sự kiện keydown để phát hiện phím Delete và Backspace
   document.addEventListener('keydown', (event) => {
-    const targetElement = getElementByXPath(targetXPath);
+    const targetElement = getElementByXPath(TEXT_INPUT_XPATH);
     if (!targetElement || document.activeElement !== targetElement) return;
     
     // Phát hiện phím Delete hoặc Backspace
@@ -367,8 +376,7 @@ function observeTargetElement() {
   
   // Thêm event listener cho sự kiện input
   document.addEventListener('input', (event) => {
-    console.log('Input event detected');
-    if (event.target === getElementByXPath(targetXPath)) {
+    if (event.target === getElementByXPath(TEXT_INPUT_XPATH)) {
       // Kiểm tra nếu nội dung trống
       if (event.target.textContent.trim() === '') {
         console.log('Nội dung đã bị xóa qua sự kiện input');
@@ -392,7 +400,7 @@ function observeTargetElement() {
   
   // Thêm event listener cho sự kiện cut và paste
   document.addEventListener('cut', (event) => {
-    if (event.target === getElementByXPath(targetXPath)) {
+    if (event.target === getElementByXPath(TEXT_INPUT_XPATH)) {
       setTimeout(() => {
         if (event.target.textContent.trim() === '') {
           console.log('Nội dung đã bị cắt hết');
