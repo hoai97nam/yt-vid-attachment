@@ -8,7 +8,7 @@ let currentChatId = '';
 
 // Khai báo biến const để lưu XPath của ô textbox nhập tin nhắn và nút gửi
 const TEXT_INPUT_XPATH = '//*[@id="main"]/footer/div[1]/div/span/div/div[2]/div[1]/div[2]/div[1]';
-const SEND_BUTTON_XPATH = '//*[@id="main"]/footer/div[1]/div/span/div/div[2]/div[2]/button';
+const SEND_BUTTON_XPATH = 'button[aria-label="Send"]';
 
 // Hàm để tải cache từ storage khi extension khởi động
 function loadTranslationCache() {
@@ -479,7 +479,7 @@ function createFloatingButton() {
       
       // Tìm và nhấp vào nút gửi
       setTimeout(() => {
-        const sendButton = getElementByXPath(SEND_BUTTON_XPATH);
+        const sendButton = document.querySelector(SEND_BUTTON_XPATH)
         if (sendButton) {
           console.log('Đã tìm thấy nút gửi, đang nhấp...');
           sendButton.click();
