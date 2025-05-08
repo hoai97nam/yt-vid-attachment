@@ -363,12 +363,12 @@ function restartAllObservers() {
 }
 
 // Kiểm tra lại mỗi 30 giây để đảm bảo observer vẫn hoạt động
-setInterval(() => {
-  if (!observerActive) {
-    console.log("Khởi động lại observer do không hoạt động");
-    restartAllObservers();
-  }
-}, 30000);
+// setInterval(() => {
+//   if (!observerActive) {
+//     console.log("Khởi động lại observer do không hoạt động");
+//     restartAllObservers();
+//   }
+// }, 30000);
 
 // Cài đặt theo dõi sự kiện DOM để phát hiện khi WhatsApp đã tải xong hoặc thay đổi
 const domObserver = new MutationObserver(debounce(() => {
