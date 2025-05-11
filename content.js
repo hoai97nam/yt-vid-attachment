@@ -5,10 +5,14 @@ let observerActive = false;
 let translationCache = {};
 // Biến để lưu trữ ID chat hiện tại
 let currentChatId = '';
+let chatObserverActive = false;
 
 // Khai báo biến const để lưu XPath của ô textbox nhập tin nhắn và nút gửi
 const TEXT_INPUT_XPATH = '//*[@id="main"]/footer/div[1]/div/span/div/div[2]/div[1]/div[2]/div[1]';
 const SEND_BUTTON_XPATH = 'button[aria-label="Send"]';
+const CHAT_LIST_SELECTOR = '#pane-side';
+const CHAT_CONTAINER_SELECTOR = 'div[role="application"]';
+
 
 // Hàm để tải cache từ storage khi extension khởi động
 function loadTranslationCache() {
@@ -34,105 +38,111 @@ function getElementByXPath(xpath) {
   return document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
 }
 
-// Cải tiến hàm theo dõi sự thay đổi cuộc trò chuyện
-function setupChatChangeMonitor() {
-  console.log("Thiết lập hệ thống theo dõi thay đổi cuộc trò chuyện");
-  
-  // Biến lưu trữ cuộc trò chuyện hiện tại
-  let lastChatTitle = '';
-  let chatChangeObserver = null;
-  
-  // Hàm để lấy tiêu đề cuộc trò chuyện hiện tại
-  function getCurrentChatTitle() {
-    // Thử lấy từ tiêu đề trang
-    const titleMatch = document.title.match(/(.+) \[\d+\]/);
-    if (titleMatch) return titleMatch[1];
-    
-    // Hoặc thử lấy từ header
-    const chatHeader = document.querySelector('#main header span[title]');
-    if (chatHeader) return chatHeader.getAttribute('title');
-    
-    return '';
-  }
-  
-  // Hàm xử lý khi phát hiện thay đổi cuộc trò chuyện
-  function handleChatChange() {
-    const currentTitle = getCurrentChatTitle();
-    
-    if (currentTitle && currentTitle !== lastChatTitle) {
-      console.log(`Đã phát hiện chuyển đổi cuộc trò chuyện: "${lastChatTitle}" -> "${currentTitle}"`);
-      lastChatTitle = currentTitle;
-      
-      // Áp dụng các bản dịch cho cuộc trò chuyện mới
-      setTimeout(() => {
-        console.log("Áp dụng bản dịch cho cuộc trò chuyện mới");
-        applyTranslationsFromCache();
-      }, 1000);
-      
-      // Thiết lập lại observer cho cuộc trò chuyện mới
-      setupChatContentObserver();
+// Lấy ID của cuộc trò chuyện hiện tại
+function getCurrentChatId() {
+  try {
+    // Nhiều cách để xác định cuộc trò chuyện hiện tại
+    const chatHeader = document.querySelector('#main header');
+    if (chatHeader) {
+      return chatHeader.innerText || 'unknown-chat';
     }
+    return 'unknown-chat';
+  } catch (e) {
+    console.warn('Không thể xác định cuộc trò chuyện hiện tại:', e);
+    return 'unknown-chat';
   }
-  
-  // Theo dõi thay đổi trên DOM
-  function observeChatList() {
-    // Theo dõi panel danh sách chat và main panel
-    const chatListPanel = document.querySelector('#pane-side');
-    const mainPanel = document.querySelector('#main');
-    
-    if (chatListPanel && mainPanel) {
-      if (chatChangeObserver) {
-        chatChangeObserver.disconnect();
-      }
-      
-      chatChangeObserver = new MutationObserver((mutations) => {
-        handleChatChange();
-      });
-      
-      // Theo dõi thay đổi trong danh sách chat
-      chatChangeObserver.observe(chatListPanel, {
-        childList: true,
-        subtree: true,
-        attributes: true
-      });
-      
-      // Theo dõi thay đổi trong main panel
-      chatChangeObserver.observe(mainPanel, {
-        childList: true,
-        attributes: true
-      });
-      
-      // Kiểm tra trạng thái ban đầu
-      handleChatChange();
-    } else {
-      // Nếu không tìm thấy các panel, thử lại sau
-      setTimeout(observeChatList, 1000);
-    }
-  }
-  
-  // Bắt đầu theo dõi thay đổi cuộc trò chuyện
-  observeChatList();
-  
-  // Theo dõi thay đổi URL (phương pháp dự phòng)
-  let lastUrl = location.href;
-  
-  // Kiểm tra URL định kỳ
-  setInterval(() => {
-    if (location.href !== lastUrl) {
-      lastUrl = location.href;
-      console.log("Phát hiện thay đổi URL:", lastUrl);
-      setTimeout(() => {
-        handleChatChange();
-      }, 1000);
-    }
-  }, 1000);
-  
-  // Thiết lập giám sát định kỳ để kiểm tra thay đổi cuộc trò chuyện
-  setInterval(() => {
-    handleChatChange();
-  }, 2000);
 }
 
+function monitorChatChanges() {
+  if (chatObserverActive) return;
+  
+  const chatList = document.querySelector(CHAT_LIST_SELECTOR); // '#pane-side';
+  if (!chatList) {
+    console.warn("Không tìm thấy danh sách chat để theo dõi");
+    setTimeout(monitorChatChanges, 2000);
+    return;
+  }
+  
+  // Lưu lại ID cuộc trò chuyện ban đầu
+  currentChatId = getCurrentChatId();
+  console.log("Chat hiện tại:", currentChatId);
+  
+  // Theo dõi khi người dùng nhấp vào một cuộc trò chuyện khác
+  chatList.addEventListener('click', (event) => {
+    // Sử dụng setTimeout để đảm bảo UI đã cập nhật sau khi click
+    setTimeout(() => {
+      const newChatId = getCurrentChatId();
+      if (newChatId !== currentChatId) {
+        console.log(`Đã chuyển từ chat "${currentChatId}" sang "${newChatId}"`);
+        currentChatId = newChatId;
+        
+        // Reset trạng thái và khởi động lại observer cho cuộc trò chuyện mới
+        lastSeenMessageId = '';
+        observerActive = false;
+        startMessageObserver();
+      }
+    }, 300);
+  });
+  
+  // Theo dõi thay đổi trong DOM để phát hiện khi WhatsApp thay đổi cuộc trò chuyện
+  const appWrapper = document.querySelector('#app');
+  if (appWrapper) {
+    const chatSwitchObserver = new MutationObserver(() => {
+      const newChatId = getCurrentChatId();
+      if (newChatId !== currentChatId && newChatId !== 'unknown-chat') {
+        console.log(`Phát hiện chuyển sang chat "${newChatId}" từ "${currentChatId}"`);
+        currentChatId = newChatId;
+        
+        // Reset trạng thái và khởi động lại observer cho cuộc trò chuyện mới
+        lastSeenMessageId = '';
+        observerActive = false;
+        
+        // Cho một chút thời gian để UI cập nhật hoàn toàn
+        setTimeout(startMessageObserver, 500);
+      }
+    });
+    
+    chatSwitchObserver.observe(appWrapper, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['aria-selected']
+    });
+    
+    chatObserverActive = true;
+    console.log("Đang theo dõi chuyển đổi cuộc trò chuyện...");
+  }
+}
+// Theo dõi thay đổi tin nhắn bằng MutationObserver
+function startMessageObserver() {
+  if (observerActive) return;
+  
+  const messageContainer = document.querySelector(CHAT_CONTAINER_SELECTOR);
+  if (!messageContainer) {
+    console.warn("Không tìm thấy container tin nhắn để theo dõi");
+    // Thử lại sau 2 giây nếu trang chưa load xong
+    setTimeout(startMessageObserver, 2000);
+    return;
+  }
+
+  const initialMessage = getLastMessageSimple();
+  lastSeenMessageId = initialMessage.id;
+  console.log("WhatsApp Translator đã kích hoạt");
+
+  const observer = new MutationObserver(() => {
+    handleNewMessage();
+  });
+
+  observer.observe(messageContainer, {
+    childList: true,
+    subtree: true
+  });
+  
+  observerActive = true;
+  console.log("Đang theo dõi tin nhắn mới...");
+  
+  applyTranslationsFromCache();
+}
 // Hàm lấy tin nhắn cuối cùng và xác định có phải của bạn không
 function getLastMessageSimple() {
   try {
@@ -278,67 +288,6 @@ function applyTranslationsFromCache() {
   console.log(`Hoàn tất áp dụng bản dịch: ${appliedCount}/${allMessages.length} tin nhắn`);
 }
 
-// Thiết lập giám sát nội dung cuộc trò chuyện
-function setupChatContentObserver() {
-  console.log("Thiết lập giám sát nội dung cuộc trò chuyện");
-  
-  const messageContainer = document.querySelector('#main div.copyable-area');
-  if (!messageContainer) {
-    console.warn("Không tìm thấy container tin nhắn để theo dõi");
-    // Thử lại sau nếu chưa tìm thấy
-    setTimeout(setupChatContentObserver, 1000);
-    return;
-  }
-
-  const initialMessage = getLastMessageSimple();
-  lastSeenMessageId = initialMessage.id;
-  
-  // Áp dụng các bản dịch từ cache cho các tin nhắn hiện tại
-  applyTranslationsFromCache();
-
-  // Tạo MutationObserver để theo dõi thay đổi trong cuộc trò chuyện
-  const chatObserver = new MutationObserver((mutations) => {
-    // Kiểm tra xem mutations có chứa tin nhắn mới không
-    let hasNewMessages = false;
-    mutations.forEach(mutation => {
-      if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-        hasNewMessages = true;
-      }
-    });
-    
-    // Nếu có tin nhắn mới, xử lý tin nhắn mới
-    if (hasNewMessages) {
-      handleNewMessage();
-    }
-    
-    // Áp dụng bản dịch cho tất cả tin nhắn mỗi khi có thay đổi lớn trong DOM
-    // Điều này đảm bảo khi người dùng cuộn lên để xem tin nhắn cũ, chúng sẽ được hiển thị với bản dịch
-    if (mutations.some(m => m.addedNodes.length > 2)) {
-      setTimeout(applyTranslationsFromCache, 500);
-    }
-  });
-
-  chatObserver.observe(messageContainer, {
-    childList: true,
-    subtree: true
-  });
-  
-  console.log("Đã thiết lập giám sát nội dung cuộc trò chuyện");
-}
-
-// Thiết lập theo dõi cuộn
-function setupScrollListener() {
-  const mainPanel = document.querySelector('#main div.copyable-area');
-  if (mainPanel) {
-    mainPanel.addEventListener('scroll', debounce(() => {
-      applyTranslationsFromCache();
-    }, 500));
-    console.log("Đã thiết lập theo dõi cuộn");
-  } else {
-    setTimeout(setupScrollListener, 1000);
-  }
-}
-
 // Hàm debounce để tránh gọi quá nhiều lần khi cuộn
 function debounce(func, wait) {
   let timeout;
@@ -352,23 +301,27 @@ function debounce(func, wait) {
   };
 }
 
-// Hàm khởi động lại tất cả các observer
-function restartAllObservers() {
-  console.log("Khởi động lại tất cả các observer");
-  observerActive = false;
-  setupChatChangeMonitor();
-  setupChatContentObserver();
-  setupScrollListener();
-  observeTargetElement();
-}
+window.addEventListener('load', () => {
+  // Cho thêm chút thời gian để WhatsApp Web khởi tạo đầy đủ
+  setTimeout(() => {
+    startMessageObserver();
+    monitorChatChanges();
+    observeTargetElement();
+  }, 5000);
+});
 
 // Kiểm tra lại mỗi 30 giây để đảm bảo observer vẫn hoạt động
-// setInterval(() => {
-//   if (!observerActive) {
-//     console.log("Khởi động lại observer do không hoạt động");
-//     restartAllObservers();
-//   }
-// }, 30000);
+setInterval(() => {
+  if (!observerActive) {
+    console.log("Khởi động lại message observer...");
+    startMessageObserver();
+  }
+  if (!chatObserverActive) {
+    console.log("Khởi động lại chat change observer...");
+    monitorChatChanges();
+  }
+}, 30000);
+
 
 // Cài đặt theo dõi sự kiện DOM để phát hiện khi WhatsApp đã tải xong hoặc thay đổi
 const domObserver = new MutationObserver(debounce(() => {
@@ -376,7 +329,6 @@ const domObserver = new MutationObserver(debounce(() => {
   const messageContainer = document.querySelector('#main div.copyable-area');
   if (messageContainer && !observerActive) {
     console.log("Phát hiện tải WhatsApp xong, khởi động observer");
-    // restartAllObservers();
   }
   
   // Kiểm tra các bản dịch mỗi khi DOM thay đổi lớn
@@ -666,28 +618,6 @@ function observeTargetElement() {
     }
   }, true);
 }
-
-// Khởi động khi trang đã load
-window.addEventListener('load', () => {
-  console.log("WhatsApp Translator: Trang đã load, bắt đầu khởi tạo");
-  setTimeout(() => {
-    restartAllObservers();
-  }, 3000); // Đợi 3 giây để trang WhatsApp load hoàn toàn
-});
-
-// Theo dõi thay đổi trong DOM để phát hiện khi nào WhatsApp đã sẵn sàng
-document.addEventListener('DOMContentLoaded', () => {
-  console.log("DOM đã tải xong, theo dõi thay đổi");
-  
-  // Kiểm tra mỗi giây để xem khi nào WhatsApp đã tải xong
-  const readyCheckInterval = setInterval(() => {
-    if (document.querySelector('#main')) {
-      console.log("Phát hiện WhatsApp đã tải xong");
-      clearInterval(readyCheckInterval);
-      restartAllObservers();
-    }
-  }, 1000);
-});
 
 // Lắng nghe thông điệp từ popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
