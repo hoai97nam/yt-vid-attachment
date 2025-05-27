@@ -464,9 +464,14 @@ function createFloatingButton() {
           if (response && response.translation) {
             // Hiển thị kết quả dịch
             translationResult.innerText = response.translation;
-          // Không tự động ẩn kết quả nữa
+            // Không tự động ẩn kết quả nữa
           } else {
+            if (response.error === 'Bạn đã hết lượt dùng thử. Vui lòng nhập code để tiếp tục sử dụng.') {
+              alert(response.error);
+              return;
+            }
             translationResult.innerText = 'Lỗi dịch thuật';
+            console.log('Hết lượt dùùng thử');
             // Vẫn giữ thông báo lỗi hiển thị
           }
         }

@@ -43,11 +43,17 @@
     button:hover {
       background-color: #128C7E;
     }
-    .status {
+    #statusMessage, #trial-info, #codeStatus {
       margin-top: 10px;
-      font-size: 12px;
-      color: #666;
-      text-align: center;
+      color: #333;
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background-color: #f8f8f8;
+    }
+    #codeInputContainer {
+      margin-top: 10px;
     }
   </style>
 </head>
@@ -68,7 +74,7 @@
       <option value="Russian">Russian</option>
     </select>
   </div>
-  
+
   <div class="option-group">
     <label for="sourceLanguage">Ngôn ngữ gửi đi:</label>
     <select id="sourceLanguage">
@@ -83,11 +89,18 @@
       <option value="Russian">Russian</option>
     </select>
   </div>
-  
+
   <button id="saveButton">Lưu Cài Đặt</button>
+  <div id="statusMessage"></div>
   
-  <div class="status" id="statusMessage"></div>
-  
+  <div id="trial-info"></div>
+  <div id="codeInputContainer" style="display: none;">
+    <label>Nhập code để mở khóa:</label>
+    <input type="text" id="upgradeCode" placeholder="Nhập code">
+    <button id="submitCode">Xác nhận</button>
+  </div>
+  <div id="codeStatus"></div>
+
   <script src="popup.js"></script>
 </body>
 </html>
