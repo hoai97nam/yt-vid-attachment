@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const trialRequestCount = data.trialRequestCount || 0;
 
     if (!isUpgraded) {
-      const left = 5 - trialRequestCount;
+      const left = 20 - trialRequestCount;
       trialInfo.innerText = `Số lượt dùng thử còn lại: ${left}`;
       if (left <= 0) {
         codeInputContainer.style.display = 'block';

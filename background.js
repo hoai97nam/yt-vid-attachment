@@ -1,31 +1,30 @@
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  const validCodes = [
+    "WS2023-ABCD-1264",
+    "WS2023-EFGH-2387",
+    "WS2023-IJKL-3492",
+    "WS2023-MNOP-4571",
+    "WS2023-QRST-5683",
+    "WS2023-UVWX-6794",
+    "WS2023-YZAB-7815",
+    "WS2023-CDEF-8926",
+    "WS2023-GHIJ-9037",
+    "WS2023-KLMN-1048",
+    "WS2023-OPQR-2159",
+    "WS2023-STUV-3260",
+    "WS2023-WXYZ-4371",
+    "WS2023-BCDE-5482",
+    "WS2023-FGHI-6593",
+    "WS2023-JKLM-7604",
+    "WS2023-NOPQ-8715",
+    "WS2023-RSTU-9826",
+    "WS2023-VWXY-0937",
+    "WS2023-ZABC-1048"
+  ];
   if (message.action === 'translate') {
     checkTrialAndIncrease(sendResponse, (trialRequestCount, isUpgraded) => {
       const API_KEY = 'AIzaSyBldYrsk-NeJ0NQ8qNUedFwsMTbsdK99lA';
       const MODEL = 'gemini-2.0-flash';
-
-      const validCodes = [
-        "WS2023-ABCD-1264",
-        "WS2023-EFGH-2387",
-        "WS2023-IJKL-3492",
-        "WS2023-MNOP-4571",
-        "WS2023-QRST-5683",
-        "WS2023-UVWX-6794",
-        "WS2023-YZAB-7815",
-        "WS2023-CDEF-8926",
-        "WS2023-GHIJ-9037",
-        "WS2023-KLMN-1048",
-        "WS2023-OPQR-2159",
-        "WS2023-STUV-3260",
-        "WS2023-WXYZ-4371",
-        "WS2023-BCDE-5482",
-        "WS2023-FGHI-6593",
-        "WS2023-JKLM-7604",
-        "WS2023-NOPQ-8715",
-        "WS2023-RSTU-9826",
-        "WS2023-VWXY-0937",
-        "WS2023-ZABC-1048"
-      ];
       
       // Lấy ngôn ngữ đích và ngôn ngữ gửi đi từ storage
       chrome.storage.sync.get(['targetLanguage', 'sourceLanguage'], function(data) {
@@ -125,7 +124,7 @@ function checkTrialAndIncrease(sendResponse, callback) {
   chrome.storage.sync.get(['trialRequestCount', 'isUpgraded'], function(data) {
     const isUpgraded = !!data.isUpgraded;
     let trialRequestCount = data.trialRequestCount || 0;
-    if (!isUpgraded && trialRequestCount >= 5) {
+    if (!isUpgraded && trialRequestCount >= 20) {
       sendResponse({ error: 'Bạn đã hết lượt dùng thử. Vui lòng nhập code để tiếp tục sử dụng.' });
       return;
     }
