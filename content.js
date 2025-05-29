@@ -48,7 +48,7 @@ function getCurrentChatId() {
     }
     return 'unknown-chat';
   } catch (e) {
-    console.warn('Không thể xác định cuộc trò chuyện hiện tại:', e);
+    console.log('Không thể xác định cuộc trò chuyện hiện tại:', e);
     return 'unknown-chat';
   }
 }
@@ -58,7 +58,7 @@ function monitorChatChanges() {
   
   const chatList = document.querySelector(CHAT_LIST_SELECTOR); // '#pane-side';
   if (!chatList) {
-    console.warn("Không tìm thấy danh sách chat để theo dõi");
+    console.log("Không tìm thấy danh sách chat để theo dõi");
     setTimeout(monitorChatChanges, 2000);
     return;
   }
@@ -449,7 +449,13 @@ function createFloatingButton() {
       // Trường hợp chưa có bản dịch, thực hiện dịch mới
       
       // Lấy text từ element
-      const textToTranslate = targetElement.innerText.trim();
+      const children = targetElement.parentElement.children;
+      let textToTranslate = '';
+      for (let i = 0; i < children.length; i++) {
+        if (children[i].innerText) {
+          textToTranslate = textToTranslate + ' \n' + children[i].innerText;
+        }
+      }
       if (!textToTranslate) return;
       
       // Hiển thị thông báo đang dịch
