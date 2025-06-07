@@ -55,13 +55,19 @@
     #codeInputContainer {
       margin-top: 10px;
     }
+    @keyframes ripple {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
+    }
   </style>
 </head>
 <body>
   <h2>WhatsApp Translator</h2>
   
   <div class="option-group">
-    <label for="targetLanguage">Ngôn ngữ dịch:</label>
+    <label for="targetLanguage">My language:</label>
     <select id="targetLanguage">
       <option value="English">English</option>
       <option value="Vietnamese">Vietnamese</option>
@@ -76,7 +82,7 @@
   </div>
 
   <div class="option-group">
-    <label for="sourceLanguage">Ngôn ngữ gửi đi:</label>
+    <label for="sourceLanguage">Language to translate:</label>
     <select id="sourceLanguage">
       <option value="English">English</option>
       <option value="Vietnamese">Vietnamese</option>
@@ -90,14 +96,13 @@
     </select>
   </div>
 
-  <button id="saveButton">Lưu Cài Đặt</button>
+  <button id="saveButton">Save Settings</button>
   <div id="statusMessage"></div>
-  
   <div id="trial-info"></div>
   <div id="codeInputContainer" style="display: none;">
-    <label>Nhập code để mở khóa:</label>
-    <input type="text" id="upgradeCode" placeholder="Nhập code">
-    <button id="submitCode">Xác nhận</button>
+    <label>Enter code to unlock:</label>
+    <input type="text" id="upgradeCode" placeholder="Enter code">
+    <button id="submitCode">Confirm</button>
   </div>
   <div id="codeStatus"></div>
 

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "WhatsApp Translator",
   "version": "1.0",
-  "description": "Tự động dịch tin nhắn WhatsApp Web realtime",
+  "description": "Auto translate WhatsApp messages realtime",
   "permissions": ["storage", "activeTab", "scripting"],
   "host_permissions": [
     "https://web.whatsapp.com/*"

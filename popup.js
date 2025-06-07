@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-  // Khởi tạo nút restart nếu có
+  // Initialize restart button if present
   const restartButton = document.getElementById('restart');
   if (restartButton) {
     restartButton.addEventListener('click', () => {
@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Lấy cài đặt ngôn ngữ và trạng thái dùng thử từ storage
+  // Get language settings and trial status from storage
   chrome.storage.sync.get(['targetLanguage', 'sourceLanguage', 'trialRequestCount', 'isUpgraded'], function(data) {
     const targetLanguageSelect = document.getElementById('targetLanguage');
     if (targetLanguageSelect && data.targetLanguage) {
@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
       sourceLanguageSelect.value = data.sourceLanguage;
     }
 
-    // Hiển thị trạng thái dùng thử
+    // Display trial status
     const trialInfo = document.getElementById('trial-info');
     const codeInputContainer = document.getElementById('codeInputContainer');
     const isUpgraded = !!data.isUpgraded;
@@ -29,17 +29,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (!isUpgraded) {
       const left = 20 - trialRequestCount;
-      trialInfo.innerText = `Số lượt dùng thử còn lại: ${left}`;
+      trialInfo.innerText = `Trial requests left: ${left}`;
       if (left <= 0) {
         codeInputContainer.style.display = 'block';
       }
     } else {
-      trialInfo.innerText = 'Phiên bản đầy đủ đã được mở khóa!';
+      trialInfo.innerText = 'Full version unlocked!';
       codeInputContainer.style.display = 'none';
     }
   });
 
-  // Xử lý sự kiện khi nhấn nút Lưu
+  // Handle Save button click event
   const saveButton = document.getElementById('saveButton');
   if (saveButton) {
     saveButton.addEventListener('click', function() {
@@ -51,20 +51,20 @@ document.addEventListener('DOMContentLoaded', function() {
       const targetLanguage = targetLanguageSelect.value;
       const sourceLanguage = sourceLanguageSelect.value;
       
-      console.log('Ngôn ngữ đích:', targetLanguage);
-      console.log('Ngôn ngữ gửi đi:', sourceLanguage);
+      console.log('Target language:', targetLanguage);
+      console.log('Source language:', sourceLanguage);
       
-      // Lưu cài đặt vào storage
+      // Save settings to storage
       chrome.storage.sync.set({
         targetLanguage: targetLanguage,
         sourceLanguage: sourceLanguage
       }, function() {
-        // Hiển thị thông báo đã lưu
+        // Show saved notification
         const statusMessage = document.getElementById('statusMessage');
         if (statusMessage) {
-          statusMessage.textContent = 'Đã lưu cài đặt!';
+          statusMessage.textContent = 'Settings saved!';
           
-          // Thông báo cho content script về thay đổi ngôn ngữ
+          // Notify content script about language change
           chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
             if (tabs && tabs[0]) {
               chrome.tabs.sendMessage(tabs[0].id, {
@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
           });
           
-          // Ẩn thông báo sau 2 giây
+          // Hide notification after 2 seconds
           setTimeout(function() {
             statusMessage.textContent = '';
           }, 2000);
@@ -84,29 +84,29 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Xử lý sự kiện khi nhấn nút Xác nhận code
+  // Handle Confirm Code button click event
   const submitCodeButton = document.getElementById('submitCode');
   if (submitCodeButton) {
     submitCodeButton.addEventListener('click', function() {
       const upgradeCode = document.getElementById('upgradeCode').value.trim();
       const codeStatus = document.getElementById('codeStatus');
       if (!upgradeCode) {
-        codeStatus.innerText = 'Vui lòng nhập code!';
+        codeStatus.innerText = 'Please enter the code!';
         return;
       }
 
-      // Gửi code đến background để xác thực
+      // Send code to background for validation
       chrome.runtime.sendMessage(
         { action: 'validateCode', code: upgradeCode },
         response => {
           if (response.status === 'success') {
             codeStatus.innerText = response.message;
-            document.getElementById('trial-info').innerText = 'Phiên bản đầy đủ đã được mở khóa!';
+            document.getElementById('trial-info').innerText = 'Full version unlocked!';
             document.getElementById('codeInputContainer').style.display = 'none';
           } else {
             codeStatus.innerText = response.message;
           }
-          // Ẩn thông báo sau 3 giây
+          // Hide notification after 3 seconds
           setTimeout(() => {
             codeStatus.innerText = '';
           }, 3000);

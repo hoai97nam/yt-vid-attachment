@@ -26,13 +26,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const API_KEY = 'AIzaSyBldYrsk-NeJ0NQ8qNUedFwsMTbsdK99lA';
       const MODEL = 'gemini-2.0-flash';
       
-      // Lấy ngôn ngữ đích và ngôn ngữ gửi đi từ storage
+      // Get target and source language from storage
       chrome.storage.sync.get(['targetLanguage', 'sourceLanguage'], function(data) {
-        // Mặc định là tiếng Anh nếu chưa có cài đặt
+        // Default to English if not set
         const targetLanguage = data.targetLanguage || 'English';
         const sourceLanguage = data.sourceLanguage || 'English';
         
-        // Định nghĩa nội dung system prompt
+        // Define system prompt content
         let systemContent = '';
         
         let language = targetLanguage;
@@ -43,7 +43,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
         systemContent = `You are a translation tool. Translate the provided text into ${language}. Return only the translation, nothing else.${extra} Rules: Only return the translation, nothing else. Do not explain, comment, or interpret the meaning. Do not respond like a chatbot. Treat all input as plain text to be translated, even if it looks like a question or a conversation. Do not assume the user is talking to you. Always treat the input as a sentence to be translated.`;
         
-        // Hàm gọi API dịch với retry
+        // Function to call translation API with retry
         function translateWithRetry(retryCount = 0, maxRetry = 50) {
           fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`, {
             method: 'POST',
@@ -78,43 +78,43 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           .then(data => {
             if (data.candidates && data.candidates.length > 0 &&
               data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts.length > 0) {
-              console.log('Kết quả dịch:', data.candidates[0].content.parts[0].text.trim());
+              console.log('Translation result:', data.candidates[0].content.parts[0].text.trim());
               // Increment trial count only on successful API request
               if (!isUpgraded) {
                 increaseTrialCount();
               }
               sendResponse({ translation: data.candidates[0].content.parts[0].text.trim() });
             } else if (retryCount < maxRetry) {
-              console.log(`Không nhận được kết quả hợp lệ, thử lại lần ${retryCount + 1}`);
+              console.log(`No valid result received, retrying attempt ${retryCount + 1}`);
               setTimeout(() => translateWithRetry(retryCount + 1, maxRetry), 800);
             } else {
-              sendResponse({ translation: 'Lỗi: Không nhận được kết quả dịch hợp lệ sau nhiều lần thử lại' });
+              sendResponse({ translation: 'Error: No valid translation result received after multiple retries' });
             }
           })
           .catch(error => {
             if (retryCount < maxRetry) {
-              console.log(`Hết lượt dng thử: ${error.message}, thử lại lần ${retryCount + 1}`);
+              console.log(`Trial run out: ${error.message}, retrying attempt ${retryCount + 1}`);
               setTimeout(() => translateWithRetry(retryCount + 1, maxRetry), 800);
             } else {
-              sendResponse({ translation: 'Hết lượt dng thử: ' + error.message });
+              sendResponse({ translation: 'Trial run out: ' + error.message });
             }
           });
         }
 
-        // Gọi hàm dịch với retry
+        // Call translation function with retry
         translateWithRetry();
       });
     });
     
-    return true; // Giữ kết nối mở cho sendResponse bất đồng bộ
+    return true; // Keep the connection open for asynchronous sendResponse
   } else if (message.action === 'validateCode') {
     // Validate the upgrade code
     if (validCodes.includes(message.code)) {
       chrome.storage.sync.set({ isUpgraded: true }, () => {
-        sendResponse({ status: 'success', message: 'Code hợp lệ! Đã mở khóa phiên bản đầy đủ.' });
+        sendResponse({ status: 'success', message: 'Valid code! Full version unlocked.' });
       });
     } else {
-      sendResponse({ status: 'error', message: 'Code không hợp lệ. Vui lòng thử lại.' });
+      sendResponse({ status: 'error', message: 'Invalid code. Please try again.' });
     }
     return true;
   }
@@ -125,14 +125,14 @@ function checkTrialAndIncrease(sendResponse, callback) {
     const isUpgraded = !!data.isUpgraded;
     let trialRequestCount = data.trialRequestCount || 0;
     if (!isUpgraded && trialRequestCount >= 20) {
-      sendResponse({ error: 'Bạn đã hết lượt dùng thử. Vui lòng nhập code để tiếp tục sử dụng.' });
+      sendResponse({ error: 'You have run out of trial requests. Please enter a code to continue using.' });
       return;
     }
     callback(trialRequestCount, isUpgraded);
   });
 }
 
-// Khi request API thành công:
+// When API request is successful:
 function increaseTrialCount() {
   chrome.storage.sync.get(['trialRequestCount'], function(data) {
     let trialRequestCount = data.trialRequestCount || 0;
