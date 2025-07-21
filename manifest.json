@@ -1,11 +1,13 @@
 {
   "manifest_version": 3,
   "name": "WhatsApp Translator",
-  "version": "1.0",
+  "version": "2.0",
   "description": "Auto translate WhatsApp messages realtime",
   "permissions": ["storage", "activeTab", "scripting"],
   "host_permissions": [
-    "https://web.whatsapp.com/*"
+    "https://web.whatsapp.com/*",
+    "https://api.gumroad.com/*",
+    "https://generativelanguage.googleapis.com/*"
   ],
   "background": {
     "service_worker": "background.js"
