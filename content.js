@@ -14,7 +14,7 @@ let textCheckInterval = null;
 // Các selector cho các thành phần trên giao diện WhatsApp
 const TEXT_INPUT_SELECTOR = 'div[role="textbox"][data-tab="10"]';
 const SEND_BUTTON_SELECTOR = 'button[data-testid="send"], button[aria-label="Send"]';
-const CHAT_HISTORY_CONTAINER_SELECTOR = 'div[role="application"]';
+const CHAT_HISTORY_CONTAINER_SELECTOR = 'div.copyable-area';
 // Selector cho khu vực soạn thảo, nơi chúng ta sẽ chèn các thành phần UI
 const COMPOSER_AREA_SELECTOR = 'div._ak1q';
 
